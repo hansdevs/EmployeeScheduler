@@ -376,6 +376,79 @@ body {
 .how-it-works a:hover {
   text-decoration: underline;
 }
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.learn-more-link {
+  background-color: var(--secondary-background);
+  color: var(--accent-color);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+.learn-more-link:hover {
+  background-color: var(--accent-color);
+  color: var(--accent-text-color);
+  text-decoration: none;
+}
+.plan-details-container {
+  display: flex;
+  flex-wrap: wrap; /* allows stacking on smaller screens */
+  max-width: 1200px;
+  margin: 2rem auto;
+  gap: 2rem;
+  padding: 0 1rem;
+}
+
+.plan-details-left,
+.plan-details-right {
+  flex: 1;
+  min-width: 280px;
+}
+
+.plan-details-left {
+  /* left column spacing if needed */
+}
+
+.plan-details-right {
+  /* right column spacing if needed */
+}
+
+.feature-list {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 1rem;
+}
+
+.feature-list li {
+  margin-bottom: 0.5rem;
+}
+
+/* If you add images */
+.plan-image {
+  max-width: 100%;
+  height: auto;
+  margin: 1rem 0;
+}
+
+/* You can adjust .select-plan-btn spacing if needed */
+.select-plan-btn {
+  background-color: var(--accent-color);
+  color: var(--accent-text-color);
+  border: none;
+  padding: 0.8rem 1.5rem;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+.select-plan-btn:hover {
+  opacity: 0.9;
+}
 
 /* Example Responsive for smaller screens */
 @media (max-width: 768px) {

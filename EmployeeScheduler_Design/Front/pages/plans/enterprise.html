@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Enterprise Plan - The Scheduler</title>
+  <link rel="stylesheet" href="../../styles/pages.css" />
+</head>
+<body>
+  <header class="header">
+    <nav class="navbar">
+      <div class="logo">The Scheduler</div>
+      <div class="nav-actions">
+        <a href="../plans.html" class="nav-link">All Plans</a>
+        <button id="themeToggle" class="dark-mode-toggle">Toggle Dark Mode</button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="plan-details-container">
+    <div class="plan-details-left">
+      <h1 class="section-title">Enterprise Plan</h1>
+      <p class="price">$999.99 / month</p>
+      <ul class="feature-list">
+        <li>Up to 10,000 Employees</li>
+        <li>Unlimited Admins / Managers</li>
+        <li>Priority (Tier 1) Support</li>
+      </ul>
+    </div>
+
+    <div class="plan-details-right">
+      <p>
+        Designed for large-scale corporations or franchises that demand top-tier scheduling 
+        solutions, unlimited growth, and 24/7 Tier 1 support. Dedicated account managers ensure 
+        you get the most from The Scheduler’s robust feature set.
+      </p>
+      <!-- <img src="../../images/enterprise-illustration.png" alt="Enterprise Plan" class="plan-image" /> -->
+
+      <button class="select-plan-btn">Select This Plan</button>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>&copy; 2025 The Scheduler. All rights reserved.</p>
+  </footer>
+
+  <script>
+    const body = document.body;
+    const themeToggle = document.getElementById('themeToggle');
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/user', { credentials: 'include' });
+        if (!res.ok) return;
+        const user = await res.json();
+        if (user.theme === 'dark') {
+          body.classList.add('dark-mode');
+          themeToggle.textContent = 'Toggle Light Mode';
+        }
+      } catch (err) {
+        console.error('Failed to fetch user:', err);
+      }
+    });
+
+    themeToggle.addEventListener('click', async () => {
+      const isDarkNow = body.classList.toggle('dark-mode');
+      const newTheme = isDarkNow ? 'dark' : 'light';
+      themeToggle.textContent = isDarkNow ? 'Toggle Light Mode' : 'Toggle Dark Mode';
+
+      try {
+        await fetch('/api/theme', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ theme: newTheme })
+        });
+      } catch (err) {
+        console.error('Error updating theme:', err);
+      }
+    });
+  </script>
+</body>
+</html>
