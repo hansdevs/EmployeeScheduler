@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>About Us - The Scheduler</title>
+  <link rel="stylesheet" href="../styles/pages.css" />
+</head>
+<body>
+  <header class="header">
+    <nav class="navbar">
+      <div class="logo">The Scheduler</div>
+      <div class="nav-actions">
+        <a href="index.html" class="nav-link">Home</a>
+        <button id="themeToggle" class="dark-mode-toggle">Toggle Dark Mode</button>
+      </div>
+    </nav>
+  </header>
+
+  <section class="about-us">
+    <div class="about-us-content">
+      <div class="about-content-text">
+        <h2>About Us</h2>
+        <p>
+          We’re a team of developers, designers, and business experts dedicated to building simpler scheduling tools.
+          Our mission is to eliminate the hassle of spreadsheets and manual time tracking, giving you more time to focus on your business.
+        </p>
+      </div>
+      <div class="about-image">
+        <img src="../images/happy-diverse-smiling-startup-entrepreneurs.png" alt="Our Team" />
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>&copy; 2025 The Scheduler. All rights reserved.</p>
+  </footer>
+
+  <script>
+    const body = document.body;
+    const themeToggle = document.getElementById('themeToggle');
+
+    // On page load, fetch the user theme
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/user', { credentials: 'include' });
+        if (!res.ok) return; // user not logged in or error
+        const user = await res.json();
+        if (user.theme === 'dark') {
+          body.classList.add('dark-mode');
+          themeToggle.textContent = 'Toggle Light Mode';
+        }
+      } catch (err) {
+        console.error('Failed to fetch user theme:', err);
+      }
+    });
+
+    // On toggle
+    themeToggle.addEventListener('click', async () => {
+      const isDarkNow = body.classList.toggle('dark-mode');
+      const newTheme = isDarkNow ? 'dark' : 'light';
+      themeToggle.textContent = isDarkNow ? 'Toggle Light Mode' : 'Toggle Dark Mode';
+
+      try {
+        await fetch('/api/theme', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ theme: newTheme })
+        });
+      } catch (err) {
+        console.error('Error updating theme:', err);
+      }
+    });
+  </script>
+</body>
+</html>

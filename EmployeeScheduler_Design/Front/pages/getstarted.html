@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Get Started - The Scheduler</title>
+  <link rel="stylesheet" href="../styles/pages.css" />
+</head>
+<body>
+  <header class="header">
+    <nav class="navbar">
+      <div class="logo">The Scheduler</div>
+      <div class="nav-actions">
+        <!-- Link back to Home -->
+        <a href="index.html" class="nav-link">Home</a>
+        <button id="themeToggle" class="dark-mode-toggle">Toggle Dark Mode</button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="get-started">
+    <h1 class="section-title">Get Started</h1>
+    <p class="form-intro">
+      Sign up in just a few steps to begin scheduling and managing your team effectively.
+    </p>
+
+    <!-- Simple Signup Form (No Plan Selection) -->
+    <form class="signup-form" action="#" method="POST">
+      <!-- Business/Personal Info -->
+      <div class="form-group">
+        <label for="companyName">Company Name</label>
+        <input type="text" id="companyName" name="companyName" placeholder="e.g. Acme Corp" required />
+      </div>
+      
+      <!-- Contact Info -->
+      <div class="form-group">
+        <label for="fullName">Your Full Name</label>
+        <input type="text" id="fullName" name="fullName" placeholder="e.g. John Doe" required />
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required />
+      </div>
+
+      <!-- Login Credentials -->
+      <div class="form-group">
+        <label for="password">Create Password</label>
+        <input type="password" id="password" name="password" placeholder="Minimum 8 characters" required />
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="form-submit-btn">Create Account</button>
+    </form>
+
+    <!-- Link to sign in if already have an account -->
+    <div class="plans-redirect">
+      <p>Already created an account? 
+        <a href="signin.html">Sign In</a>
+      </p>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>&copy; 2025 The Scheduler. All rights reserved.</p>
+  </footer>
+
+  <script>
+    const body = document.body;
+    const themeToggle = document.getElementById('themeToggle');
+
+    // On page load, fetch user theme
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/user', { credentials: 'include' });
+        if (!res.ok) return; // not logged in or error
+        const user = await res.json();
+        if (user.theme === 'dark') {
+          body.classList.add('dark-mode');
+          themeToggle.textContent = 'Toggle Light Mode';
+        }
+      } catch (err) {
+        console.error('Failed to fetch user:', err);
+      }
+    });
+
+    // On toggle, update theme
+    themeToggle.addEventListener('click', async () => {
+      const isDarkNow = body.classList.toggle('dark-mode');
+      const newTheme = isDarkNow ? 'dark' : 'light';
+      themeToggle.textContent = isDarkNow ? 'Toggle Light Mode' : 'Toggle Dark Mode';
+
+      try {
+        await fetch('/api/theme', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ theme: newTheme })
+        });
+      } catch (err) {
+        console.error('Error updating theme:', err);
+      }
+    });
+  </script>
+</body>
+</html>

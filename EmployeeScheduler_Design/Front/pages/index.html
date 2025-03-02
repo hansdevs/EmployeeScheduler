@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>The Scheduler - Landing Page</title>
+  <!-- Link to the shared CSS file -->
+  <link rel="stylesheet" href="../styles/pages.css" />
+</head>
+<body>
+  <header class="header">
+    <nav class="navbar">
+      <div class="logo">The Scheduler</div>
+      <div class="nav-actions">
+        <!-- Link to About Us page -->
+        <a href="about.html" class="nav-link">About Us</a>
+        <button id="themeToggle" class="dark-mode-toggle">Toggle Dark Mode</button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="hero">
+    <h1 class="hero-title">A Simpler Way to Manage Your Workforce</h1>
+    <p class="hero-subtitle">
+      Create shifts, track time, and streamline your team's schedule all in one place.
+    </p>
+    <!-- Updated link to the new "getstarted.html" page -->
+    <a href="getstarted.html" class="cta-button">Get Started</a>
+  </main>
+
+  <section class="features">
+    <div class="feature-card">
+      <h2>24-Hour Clock View</h2>
+      <p>Visually schedule employees in an intuitive daily interface.</p>
+    </div>
+    <div class="feature-card">
+      <h2>Punch-Clock System</h2>
+      <p>Integrate real-time clock-ins/outs, breaks, and late flags.</p>
+    </div>
+    <div class="feature-card">
+      <h2>Role-Based Access</h2>
+      <p>Admins, managers, and employees — all managed from one platform.</p>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="feature-card">
+      <h2>Custom Break Policies</h2>
+      <p>Easily configure paid/unpaid breaks in minutes.</p>
+    </div>
+    <div class="feature-card">
+      <h2>Department Management</h2>
+      <p>Organize employees into different departments or teams.</p>
+    </div>
+    <div class="feature-card">
+      <h2>Reporting & Analytics</h2>
+      <p>Quickly export data or view real-time labor costs.</p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>&copy; 2025 The Scheduler. All rights reserved.</p>
+  </footer>
+
+  <script>
+    const body = document.body;
+    const themeToggle = document.getElementById('themeToggle');
+
+    // 1) On page load, fetch the user from /api/user
+    //    If theme === 'dark', apply .dark-mode
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/user', { credentials: 'include' });
+        if (!res.ok) {
+          // User might not be logged in or some error
+          return;
+        }
+        const user = await res.json();
+        if (user.theme === 'dark') {
+          body.classList.add('dark-mode');
+          themeToggle.textContent = 'Toggle Light Mode';
+        }
+      } catch (err) {
+        console.error('Failed to fetch user:', err);
+      }
+    });
+
+    // 2) On toggle, update DOM and PUT /api/theme
+    themeToggle.addEventListener('click', async () => {
+      const isDarkNow = body.classList.toggle('dark-mode');
+      const newTheme = isDarkNow ? 'dark' : 'light';
+      themeToggle.textContent = isDarkNow ? 'Toggle Light Mode' : 'Toggle Dark Mode';
+
+      // Save the new theme to the server
+      try {
+        await fetch('/api/theme', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ theme: newTheme })
+        });
+      } catch (err) {
+        console.error('Error updating theme:', err);
+      }
+    });
+  </script>
+</body>
+</html>

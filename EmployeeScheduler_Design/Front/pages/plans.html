@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Select a Plan - The Scheduler</title>
+  <link rel="stylesheet" href="../styles/pages.css" />
+</head>
+<body>
+  <header class="header">
+    <nav class="navbar">
+      <div class="logo">The Scheduler</div>
+      <div class="nav-actions">
+        <a href="index.html" class="nav-link">Home</a>
+        <button id="themeToggle" class="dark-mode-toggle">Toggle Dark Mode</button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="plans-section">
+    <h1 class="section-title">Choose Your Plan</h1>
+    <p class="plans-intro">
+      Find the right plan for your organization. Upgrade or downgrade anytime. <br/>
+      <em>Large Business and Enterprise plans include Tier 1 support.</em>
+    </p>
+
+    <div class="plans-grid">
+      <!-- Example plan card -->
+      <div class="plan-card">
+        <h2>Small Business</h2>
+        <p class="price">$14.99 / month</p>
+        <ul>
+          <li>Up to 10 Employees</li>
+          <li>1 Admin / 1 Manager</li>
+          <li>Standard Support</li>
+        </ul>
+        <button class="select-plan-btn">Select</button>
+      </div>
+
+      <div class="plan-card">
+        <h2>Growing Business</h2>
+        <p class="price">$29.99 / month</p>
+        <ul>
+          <li>Up to 30 Employees</li>
+          <li>Up to 2 Admins and 2 Managers</li>
+          <li>Standard Support</li>
+          
+        </ul>
+        <button class="select-plan-btn">Select</button>
+      </div>
+
+      <div class="plan-card">
+        <h2>Medium Business</h2>
+        <p class="price">$74.99 / month</p>
+        <ul>
+          <li>Up to 100 Employees</li>
+          <li>Up to 5 Admins and 10 Managers</li>
+          <li>Standard Support</li>
+        </ul>
+        <button class="select-plan-btn">Select</button>
+      </div>
+
+      <div class="plan-card">
+        <h2>Large Business</h2>
+        <p class="price">$299.99 / month</p>
+        <ul>
+          <li>Up to 1000 Employees</li>
+          <li>Up to 25 Admins and 75 Managers</li>
+          <li>Priority Support</li>
+        </ul>
+        <button class="select-plan-btn">Select</button>
+      </div>
+
+      <div class="plan-card">
+        <h2>Enterprise</h2>
+        <p class="price">$999.99 / month</p>
+        <ul>
+          <li>Up to 10,000 Employees</li>
+          <li>Unlimited Admins and  Unlimited Managers</li>
+          <li>Priority Support</li>
+        </ul>
+        <button class="select-plan-btn">Select</button>
+      </div>
+    </div>
+
+    <!-- New "How It Works" section -->
+    <section class="how-it-works">
+      <h2>How It Works</h2>
+      <ol>
+        <li><strong>Sign Up:</strong> Already have an account? <a href="signin.html">Sign In</a>. Otherwise, <a href="getstarted.html">create an account</a> first.</li>
+        <li><strong>Select Your Plan:</strong> Choose from the options above based on your employee count and needed features.</li>
+        <li><strong>Enter Payment Details:</strong> Securely provide billing info. You can upgrade or downgrade anytime.</li>
+        <li><strong>Start Scheduling:</strong> Once subscribed, you gain immediate access to The Scheduler’s full suite of tools.</li>
+      </ol>
+      <p>
+        If you have any questions, feel free to <a href="#">contact us</a>. We’re here to help 24/7, 
+        with Tier 1 support guaranteed for Large Business and Enterprise plans.
+      </p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>&copy; 2025 The Scheduler. All rights reserved.</p>
+  </footer>
+
+  <script>
+    const body = document.body;
+    const themeToggle = document.getElementById('themeToggle');
+
+    // On page load, check user theme
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/user', { credentials: 'include' });
+        if (!res.ok) return;
+        const user = await res.json();
+        if (user.theme === 'dark') {
+          body.classList.add('dark-mode');
+          themeToggle.textContent = 'Toggle Light Mode';
+        }
+      } catch (err) {
+        console.error('Failed to fetch user:', err);
+      }
+    });
+
+    // On toggle, update theme
+    themeToggle.addEventListener('click', async () => {
+      const isDarkNow = body.classList.toggle('dark-mode');
+      const newTheme = isDarkNow ? 'dark' : 'light';
+      themeToggle.textContent = isDarkNow ? 'Toggle Light Mode' : 'Toggle Dark Mode';
+
+      try {
+        await fetch('/api/theme', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ theme: newTheme })
+        });
+      } catch (err) {
+        console.error('Error updating theme:', err);
+      }
+    });
+  </script>
+</body>
+</html>
