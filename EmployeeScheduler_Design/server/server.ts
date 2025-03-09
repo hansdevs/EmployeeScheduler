@@ -1,44 +1,47 @@
 // server/server.ts
-
-import 'reflect-metadata';
 import express from 'express';
-import { createConnection } from 'typeorm';
-import themeRoutes from './routes/themeRoutes';
+import session from 'express-session';
+import path from 'path';
+
+// Import our route modules
 import userRoutes from './routes/userRoutes';
-// import your session or JWT auth middleware as needed
+import themeRoutes from './routes/themeRoutes';
 
-async function startServer() {
-  try {
-    await createConnection({
-      type: 'postgres', // or 'mysql', 'sqlite', etc.
-      host: 'localhost',
-      port: 5432,
-      username: 'test',
-      password: 'test',
-      database: 'schedulerdb',
-      entities: [__dirname + '/models/*.ts'],
-      synchronize: true, // for dev only, auto-creates tables
-    });
+// Create Express app
+const app = express();
 
-    const app = express();
-    app.use(express.json());
+// Body parsing middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-    // Example: app.use(sessionMiddleware) or JWT verification, etc.
+// Session configuration (storing session in memory for demo)
+// For production, use a real session store like Redis or a DB
+app.use(
+  session({
+    secret: 'some-random-secret', // change to something secure in production
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 1000 * 60 * 60, // 1 hour
+    },
+  })
+);
 
-    // Example: all /api/theme, /api/user require auth
-    app.use('/api/theme', themeRoutes);
-    app.use('/api/user', userRoutes);
+// Serve static front-end from "Front" folder
+// (If your entry file is "Front/pages/index.html", just ensure the path is correct)
+app.use(express.static(path.join(__dirname, '../../Front')));
 
-    // Serve static front-end
-    // e.g. app.use(express.static('Front'));
+// Mount routes under /api
+app.use('/api', userRoutes);
+app.use('/api', themeRoutes);
 
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
-  } catch (error) {
-    console.error('Error starting server:', error);
-  }
-}
+// Fallback: if no matching route, serve index.html (SPA-like fallback)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../Front/pages/index.html'));
+});
 
-startServer();
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});

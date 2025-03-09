@@ -1,38 +1,40 @@
 // server/routes/userRoutes.ts
-
-import { Request, Response, Router } from 'express';
-import { getRepository } from 'typeorm';
-import { User } from '../models/User';
+import { Router } from 'express';
 
 const router = Router();
 
-/**
- * GET /api/user
- * Returns the current user's info (including theme).
- */
-router.get('/', async (req: Request, res: Response) => {
-  try {
-    const userId = req.user?.id; // or req.session.userId
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+// Hard-coded test user
+const validUser = {
+  username: 'Test',
+  password: 'password',
+  theme: 'light', // default or whatever you like
+};
 
-    const userRepo = getRepository(User);
-    const user = await userRepo.findOne(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+router.post('/login', (req, res) => {
+  const { username, password } = req.body;
 
-    // Return only what you want the client to see
-    return res.json({
-      id: user.id,
-      email: user.email,
-      theme: user.theme,
-    });
-  } catch (error) {
-    console.error('GET /api/user error:', error);
-    return res.status(500).json({ message: 'Server error' });
+  // Check user credentials
+  if (username === validUser.username && password === validUser.password) {
+    // Store user in session
+    req.session.user = {
+      username: validUser.username,
+      theme: validUser.theme,
+    };
+    return res.json({ message: 'Login successful' });
   }
+
+  // Wrong credentials
+  return res.status(401).json({ error: 'Invalid username or password' });
+});
+
+router.get('/user', (req, res) => {
+  // If user is not in session, return 401
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  // Return user info (e.g., username, theme)
+  return res.json(req.session.user);
 });
 
 export default router;
