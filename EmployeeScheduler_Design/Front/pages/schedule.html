@@ -1,28 +1,155 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>The Scheduler - 24-Hour Schedule</title>
   
+  <!-- Bootstrap CSS -->
   <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
   />
-  
+
+  <!-- Your existing styles -->
   <link rel="stylesheet" href="../styles/pages.css" />
 
   <style>
+    /* ===============================
+       GENERAL LAYOUT / TOP NAV
+       =============================== */
+    body {
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 0;
+    }
+    .dark-mode {
+      background-color: #2b2b2b;
+      color: #f1f1f1;
+    }
+
+    /* Top bar (like the screenshot with multiple “buttons”) */
+    .top-bar {
+      background-color: #0d6efd; /* Bootstrap primary color or your choice */
+      color: #fff;
+      padding: 0.5rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .top-bar .logo {
+      font-weight: 600;
+      font-size: 1.25rem;
+      margin-right: 1rem;
+    }
+    .top-bar .nav-btns button {
+      background: none;
+      border: none;
+      color: #ffffffcc;
+      font-weight: 500;
+      margin: 0 0.25rem;
+      cursor: pointer;
+    }
+    .top-bar .nav-btns button:hover {
+      color: #fff;
+    }
+    .money-display {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    /* ===============================
+       LEFT “BUSINESS CARD” PANEL
+       =============================== */
+    .left-panel {
+      background-color: #ffffff;
+      border-right: 1px solid rgba(0,0,0,0.1);
+      padding: 1rem;
+      min-width: 280px;
+    }
+    .dark-mode .left-panel {
+      background-color: #3a3a3a;
+      border-right-color: rgba(255,255,255,0.1);
+    }
+    .business-card {
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .dark-mode .business-card {
+      border-color: rgba(255,255,255,0.1);
+    }
+    .business-card .logo-area img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      margin-bottom: 0.5rem;
+    }
+    .business-card h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0.5rem 0;
+    }
+    .business-card p {
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+    .business-card .btn-primary {
+      font-size: 0.85rem;
+      padding: 0.4rem 0.6rem;
+    }
+    .requirements-list {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+
+    /* ===============================
+       MAIN SCHEDULER AREA
+       =============================== */
+    .main-content {
+      flex: 1;
+      padding: 1rem;
+    }
     .schedule-container {
-      margin: 2rem auto 4rem auto;
-      max-width: 1200px;
+      margin: 1rem auto;
+      max-width: 1100px;
+    }
+
+    /* Day toggle row (Monday–Sunday) like the screenshot’s small switches */
+    .day-toggle-bar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .day-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .day-toggle input[type="checkbox"] {
+      accent-color: #0d6efd;
+      transform: scale(1.2);
+      cursor: pointer;
+    }
+
+    /* The schedule table itself */
+    .schedule-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
     }
     .schedule-table thead th {
-      background-color: var(--accent-color);
-      color: var(--accent-text-color);
+      background-color: #0d6efd;
+      color: #fff;
       text-align: center;
       vertical-align: middle;
       border: 1px solid rgba(0,0,0,0.1);
       font-weight: 600;
+      padding: 0.5rem;
+    }
+    .dark-mode .schedule-table thead th {
+      border-color: rgba(255,255,255,0.1);
     }
     .schedule-table tbody td {
       border: 1px solid rgba(0,0,0,0.1);
@@ -32,140 +159,226 @@
       text-align: center;
       vertical-align: middle;
       cursor: pointer;
+      background-color: #fff;
     }
-    body.dark-mode .schedule-table thead th {
+    .dark-mode .schedule-table tbody td {
       border-color: rgba(255,255,255,0.1);
+      background-color: #4a4a4a;
     }
-    body.dark-mode .schedule-table tbody td {
-      border-color: rgba(255,255,255,0.1);
-    }
-
-    /* Drag highlight (optional) */
     .sched-cell.drag-over {
-      background-color: rgba(20, 184, 166, 0.15);
+      background-color: rgba(13, 110, 253, 0.15); /* highlight color when dragging */
     }
 
-    /* The block that appears to indicate a shift */
+    /* The color-coded “shift blocks” for employees */
     .scheduled-block {
-      background-color: var(--accent-color);
-      color: var(--accent-text-color);
+      color: #fff;
       border-radius: 4px;
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       text-align: center;
       width: 95%;
-      padding: 0.3rem 0.2rem;
+      padding: 0.25rem 0.2rem;
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
+      pointer-events: none;
     }
     .scheduled-block:hover {
-      opacity: 0.85;
+      opacity: 0.9;
+    }
+
+    /* Example color classes you can map to employees */
+    .block-green   { background-color: #18a558; }
+    .block-purple  { background-color: #9b59b6; }
+    .block-blue    { background-color: #3498db; }
+    .block-orange  { background-color: #e67e22; }
+    .block-red     { background-color: #e74c3c; }
+    .block-yellow  { background-color: #f1c40f; }
+
+    /* ===============================
+       FOOTER
+       =============================== */
+    .footer {
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.85rem;
+      color: #6c757d;
+    }
+    .dark-mode .footer {
+      color: #aaa;
+    }
+
+    /* (Optional) If you need scroll in small screens: */
+    @media (max-width: 768px) {
+      .schedule-table thead th,
+      .schedule-table tbody td {
+        width: 30px;
+        height: 50px;
+      }
     }
   </style>
 </head>
 <body>
-  <!-- HEADER -->
-  <header class="header">
-    <nav class="navbar container">
-      <div class="logo">The Scheduler</div>
-      <div class="nav-actions d-flex align-items-center gap-3">
-        <a href="about.html" class="nav-link">About Us</a>
-        <button id="themeToggle" class="dark-mode-toggle">Toggle Dark Mode</button>
+  <!-- TOP BAR (like the screenshot’s icon row) -->
+  <div class="top-bar">
+    <div class="d-flex align-items-center">
+      <div class="logo">BizMan</div>
+      <div class="nav-btns">
+        <button>Persona</button>
+        <button>Contacts</button>
+        <button>MyEmployees</button>
+        <button>BizMan</button>
+        <button>EconoView</button>
+        <button>MarketInsider</button>
       </div>
-    </nav>
-  </header>
+    </div>
+    <div class="money-display">
+      $107,470,000 | Fri (Day 2021) | 13:05
+    </div>
+  </div>
 
-  <!-- MAIN CONTENT -->
-  <main class="schedule-container">
-    <h1 class="text-center mb-4">24-Hour Schedule</h1>
+  <!-- MAIN LAYOUT: LEFT PANEL + MAIN SCHEDULER CONTENT -->
+  <div class="d-flex" style="min-height: calc(100vh - 48px);">
+    <!-- LEFT “BUSINESS CARD” PANEL -->
+    <aside class="left-panel">
+      <div class="business-card">
+        <!-- If you have a logo, put <img> here -->
+        <div class="logo-area mb-2">
+          <!-- Example placeholder: -->
+          <img
+            src="https://via.placeholder.com/60x60.png?text=Logo"
+            alt="Business Logo"
+          />
+        </div>
+        <h2>ANNELIENS - LAWYERS</h2>
+        <p class="text-muted">Law Firm</p>
+        <button class="btn btn-primary mb-2">OPEN IN ECONOVIEW</button>
 
-    <form method="POST" action="/save_schedule">
+        <div class="requirements-list">
+          <div>
+            ✅ Desktop workstation
+          </div>
+        </div>
+      </div>
+    </aside>
 
-      <div class="table-responsive">
-        <table class="table schedule-table align-middle" id="scheduleTable">
-          <thead>
-            <tr>
-              <th>Employee</th>
-              {% for hour in range(24) %}
-                <th>{{ hour }}</th>
-              {% endfor %}
-            </tr>
-          </thead>
-          <tbody>
-            {% for emp in employees %}
-            <tr data-employee-id="{{ emp.id }}">
-              <td class="fw-semibold">{{ emp.name }}</td>
-              {% for hour in range(24) %}
-              <td class="sched-cell" data-hour="{{ hour }}"></td>
-              {% endfor %}
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    <!-- MAIN CONTENT AREA -->
+    <main class="main-content">
+      <div class="day-toggle-bar">
+        <!-- Toggle for each day (just a visual example) -->
+        <div class="day-toggle">
+          <label for="mondayToggle">Monday</label>
+          <input type="checkbox" id="mondayToggle" checked>
+        </div>
+        <div class="day-toggle">
+          <label for="tuesdayToggle">Tuesday</label>
+          <input type="checkbox" id="tuesdayToggle" checked>
+        </div>
+        <div class="day-toggle">
+          <label for="wednesdayToggle">Wednesday</label>
+          <input type="checkbox" id="wednesdayToggle" checked>
+        </div>
+        <div class="day-toggle">
+          <label for="thursdayToggle">Thursday</label>
+          <input type="checkbox" id="thursdayToggle" checked>
+        </div>
+        <div class="day-toggle">
+          <label for="fridayToggle">Friday</label>
+          <input type="checkbox" id="fridayToggle" checked>
+        </div>
+        <div class="day-toggle">
+          <label for="saturdayToggle">Saturday</label>
+          <input type="checkbox" id="saturdayToggle">
+        </div>
+        <div class="day-toggle">
+          <label for="sundayToggle">Sunday</label>
+          <input type="checkbox" id="sundayToggle">
+        </div>
       </div>
 
-      <!-- Hidden input for the final JSON of shifts -->
-      <input type="hidden" id="new_shifts" name="new_shifts" />
+      <div class="schedule-container">
+        <h1 class="mb-3 text-center">Shared Schedule (All Days)</h1>
+        <!-- “Hide cleaning employees” example toggle, purely visual here -->
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" id="hideCleaningSwitch">
+          <label class="form-check-label" for="hideCleaningSwitch">
+            Hide cleaning employees
+          </label>
+        </div>
 
-      <!-- Save button -->
-      <div class="mt-3 text-end">
-        <button type="button" class="btn btn-success" onclick="saveSchedule()">
-          Save Schedule
-        </button>
+        <form method="POST" action="/save_schedule">
+          <div class="table-responsive">
+            <table class="table schedule-table align-middle" id="scheduleTable">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  {% for hour in range(24) %}
+                    <th>{{ hour }}</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for emp in employees %}
+                <tr data-employee-id="{{ emp.id }}">
+                  <td class="fw-semibold">{{ emp.name }}</td>
+                  {% for hour in range(24) %}
+                  <td class="sched-cell" data-hour="{{ hour }}"></td>
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Hidden input for the final JSON of shifts -->
+          <input type="hidden" id="new_shifts" name="new_shifts" />
+
+          <!-- Save button -->
+          <div class="mt-3 text-end">
+            <button type="button" class="btn btn-success" onclick="saveSchedule()">
+              Save Schedule
+            </button>
+          </div>
+        </form>
       </div>
-    </form>
-  </main>
+    </main>
+  </div>
 
   <!-- FOOTER -->
   <footer class="footer">
-    <p class="text-center">&copy; 2025 The Scheduler. All rights reserved.</p>
+    <p>&copy; 2025 The Scheduler. All rights reserved.</p>
   </footer>
 
   <!-- Bootstrap JS Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- jQuery (for the scheduling snippet) -->
+  <!-- jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
   <!-- Dark Mode Toggle (Optional) -->
   <script>
     const body = document.body;
-    const themeToggle = document.getElementById('themeToggle');
-    window.addEventListener('DOMContentLoaded', async () => {
-      try {
-        const res = await fetch('/api/user', { credentials: 'include' });
-        if (!res.ok) return;
-        const user = await res.json();
-        if (user.theme === 'dark') {
-          body.classList.add('dark-mode');
-          themeToggle.textContent = 'Toggle Light Mode';
-        }
-      } catch (err) {
-        console.error('Theme fetch error:', err);
-      }
-    });
-    themeToggle.addEventListener('click', async () => {
-      const isDarkNow = body.classList.toggle('dark-mode');
-      themeToggle.textContent = isDarkNow ? 'Toggle Light Mode' : 'Toggle Dark Mode';
-      try {
-        await fetch('/api/theme', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ theme: isDarkNow ? 'dark' : 'light' })
-        });
-      } catch (err) {
-        console.error('Error updating theme:', err);
-      }
-    });
+    // Example: if you have a “dark mode” button somewhere, hook it here.
+    // ...
   </script>
 
-  <!-- CLICK & DRAG SCHEDULING LOGIC -->
+  <!-- CLICK & DRAG SCHEDULING LOGIC (same as your code, with color-coding) -->
   <script>
     let isMouseDown = false;
     let startHour = null;
     let startEmployeeId = null;
     let selectedShifts = [];
+
+    // Example color map for employees
+    // (You might generate or store this on the server, etc.)
+    // Keyed by employee_id or name:
+    const employeeColors = {
+      1: "block-green",
+      2: "block-purple",
+      3: "block-blue",
+      4: "block-orange",
+      5: "block-red",
+      // etc...
+    };
 
     $(document).ready(function(){
       // On mousedown, capture which hour & which employee row
@@ -176,7 +389,7 @@
         startEmployeeId = $(this).closest('tr').data('employee-id');
       });
 
-      // As we drag over cells, optionally highlight them
+      // Highlight on drag
       $('.sched-cell').on('mouseover', function(){
         if(isMouseDown) {
           const curHour = $(this).data('hour');
@@ -217,10 +430,18 @@
             const row = $('tr[data-employee-id="'+startEmployeeId+'"]');
             row.find('.scheduled-block').remove();
 
+            // Build the color class
+            const colorClass = employeeColors[startEmployeeId] || "block-blue"; 
+            // Fallback color if not in map
+
             // Mark the cells from minH..maxH-1
             for(let h = minH; h < maxH; h++){
               const cell = row.find('.sched-cell[data-hour="'+h+'"]');
-              cell.empty().append('<div class="scheduled-block">Scheduled</div>');
+              cell.empty().append(`
+                <div class="scheduled-block ${colorClass}">
+                  Scheduled
+                </div>
+              `);
             }
           }
         }

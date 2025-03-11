@@ -1,0 +1,22 @@
+.block-blue {
+  background-color: #3498db !important;
+}
+.block-green {
+  background-color: #18a558 !important;
+}
+.block-purple {
+  background-color: #9b59b6 !important;
+}
+.block-orange {
+  background-color: #e67e22 !important;
+}
+.block-red {
+  background-color: #e74c3c !important;
+}
+.block-yellow {
+  background-color: #f1c40f !important;
+}
+
+.shift-bar {
+  pointer-events: auto; 
+}

@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Schedule</h2>
+
+<!-- If we have a “saved_flag” or “schedule_published” we show a small success message -->
+{% if saved_flag == "1" %}
+<div class="alert alert-success">
+  Schedule saved as draft!
+</div>
+{% elif saved_flag == "published" %}
+<div class="alert alert-info">
+  Schedule has been published!
+</div>
+{% endif %}
+
+<!-- Existing Employees -->
+{% if employees %}
+<div class="mb-4">
+  <h5>Existing Employees</h5>
+  <ul class="list-group">
+    {% for emp in employees if emp.color is defined %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <div>
+        <strong>{{ emp.name }}</strong>
+        {% if emp.type %}- <small>{{ emp.type }}</small>{% endif %}
+        <span class="ms-2 badge bg-secondary">{{ emp.color }}</span>
+      </div>
+      <!-- separate form for removing an employee -->
+      <form method="POST" style="margin:0;">
+        <input type="hidden" name="action" value="remove_employee">
+        <input type="hidden" name="remove_id" value="{{ emp.id }}">
+        <button class="btn btn-danger btn-sm">Remove</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% else %}
+<p>No employees yet. Go to the Employees page to add some!</p>
+{% endif %}
+
+<!-- SHIFT CREATION DAY CHECKBOXES -->
+<div class="mb-3" id="dayToggles" style="display:flex; gap:1rem; align-items:center;">
+  <span>Days to Assign:</span>
+  <label><input type="checkbox" value="0" checked> Mon</label>
+  <label><input type="checkbox" value="1" checked> Tue</label>
+  <label><input type="checkbox" value="2" checked> Wed</label>
+  <label><input type="checkbox" value="3" checked> Thu</label>
+  <label><input type="checkbox" value="4" checked> Fri</label>
+  <label><input type="checkbox" value="5"> Sat</label>
+  <label><input type="checkbox" value="6"> Sun</label>
+</div>
+
+<!-- VIEW DAY FILTER -->
+<div class="row mb-3">
+  <div class="col-md-4">
+    <label class="form-label">View Day:</label>
+    <select id="viewDaySelect" class="form-select">
+      <option value="0">Monday (0)</option>
+      <option value="1">Tuesday (1)</option>
+      <option value="2">Wednesday (2)</option>
+      <option value="3">Thursday (3)</option>
+      <option value="4">Friday (4)</option>
+      <option value="5">Saturday (5)</option>
+      <option value="6">Sunday (6)</option>
+    </select>
+  </div>
+</div>
+
+<h5>24-Hour Schedule</h5>
+<p class="text-muted">
+  Check the days you want to **assign** for a new shift, pick which **day to view** the schedule for, 
+  then **click‐and‐drag** across hour cells. 
+  The green tinted area shows operating hours for the **viewed** day.
+</p>
+
+<!-- separate form for saving schedule -->
+<form method="POST" action="{{ url_for('save_schedule') }}" id="scheduleSaveForm">
+  <input type="hidden" name="new_shifts" id="new_shifts">
+  <input type="hidden" name="publish_action" id="publish_action" value="draft">
+
+  <table class="table table-bordered" id="scheduleTable" style="overflow:hidden;">
+    <thead>
+      <tr style="background-color:#0d6efd; color:#fff;">
+        <th>Employee</th>
+        {% for hour in range(24) %}
+          <th>{{ hour }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for emp in employees if emp.color is defined %}
+      <tr data-emp-id="{{ emp.id }}" data-emp-color="{{ emp.color }}">
+        <td style="width:120px; font-weight:600;">{{ emp.name }}</td>
+        {% for hour in range(24) %}
+        <td class="sched-cell" data-hour="{{ hour }}" style="width:40px; height:60px; position:relative;">
+          <div class="cell-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair;"></div>
+          <div class="op-hours-highlight" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></div>
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="mt-3 text-end">
+    <button type="button" class="btn btn-success" onclick="saveAsDraft()">Save as Draft</button>
+    <button type="button" class="btn btn-info" onclick="publishSchedule()">Publish Schedule</button>
+  </div>
+</form>
+
+<!-- jQuery + JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  let selectedShifts = JSON.parse('{{ schedule|tojson|safe }}') || [];
+  let businessInfo   = JSON.parse(`{{ business|tojson|safe }}`);
+
+  let isMouseDown = false;
+  let startCell = null;
+  let endCell   = null;
+  let startRow  = null;
+  let tempShift = null;
+
+  $(document).ready(function(){
+    redrawShifts();
+    highlightBusinessHours();
+
+    // If user changes "View Day", re-draw
+    $('#viewDaySelect').on('change', function(){
+      redrawShifts();
+      highlightBusinessHours();
+    });
+
+    // SHIFT DRAG
+    $('.cell-overlay').on('mousedown', function(e){
+      e.preventDefault();
+      isMouseDown = true;
+      startCell = $(this).closest('.sched-cell');
+      endCell   = startCell;
+      startRow  = $(this).closest('tr');
+      let minHour = startCell.data('hour');
+      tempShift = {
+        employee_id: startRow.data('emp-id'),
+        start: minHour,
+        end:   minHour+1,
+        days:  getCheckedDays()
+      };
+      redrawShifts();
+    });
+
+    $('.cell-overlay').on('mouseover', function(){
+      if(isMouseDown && tempShift){
+        let row = $(this).closest('tr');
+        if(row[0] === startRow[0]){
+          endCell = $(this).closest('.sched-cell');
+          let minH = Math.min(startCell.data('hour'), endCell.data('hour'));
+          let maxH = Math.max(startCell.data('hour'), endCell.data('hour')) + 1;
+          tempShift.start = minH;
+          tempShift.end   = maxH;
+          redrawShifts();
+        }
+      }
+    });
+
+    $(document).on('mouseup', function(e){
+      if(isMouseDown){
+        isMouseDown = false;
+        if(tempShift){
+          // finalize => remove old shift for each day & add new
+          tempShift.days.forEach(d => {
+            selectedShifts = selectedShifts.filter(s =>
+              !(s.employee_id === tempShift.employee_id && s.day === d)
+            );
+            selectedShifts.push({
+              employee_id: tempShift.employee_id,
+              start: tempShift.start,
+              end:   tempShift.end,
+              day:   d
+            });
+          });
+          tempShift = null;
+          redrawShifts();
+        }
+      }
+    });
+  });
+
+  function getCheckedDays(){
+    let days = [];
+    $('#dayToggles input[type="checkbox"]:checked').each(function(){
+      days.push(parseInt($(this).val()));
+    });
+    return days;
+  }
+  function getViewDay(){
+    return parseInt($('#viewDaySelect').val());
+  }
+
+  function redrawShifts(){
+    $('.shift-bar').remove();
+    selectedShifts.forEach(s => drawBar(s, false));
+    if(tempShift){
+      tempShift.days.forEach(d => {
+        if(d === getViewDay()){
+          drawBar({
+            employee_id: tempShift.employee_id,
+            start: tempShift.start,
+            end:   tempShift.end,
+            day:   d
+          }, true);
+        }
+      });
+    }
+  }
+
+  function drawBar(shift,isTemp){
+    let viewDay = getViewDay();
+    if(shift.day !== viewDay) return;
+    let row = $('tr[data-emp-id="'+ shift.employee_id +'"]');
+    if(!row.length) return;
+    let colorClass = row.data('emp-color') || 'block-blue';
+
+    let cells = row.find('.sched-cell');
+    let scell = cells.eq(shift.start);
+    let ecell = cells.eq(shift.end -1);
+    if(!scell.length || !ecell.length) return;
+
+    let srect = scell[0].getBoundingClientRect();
+    let erect = ecell[0].getBoundingClientRect();
+    let rrect = cells.first()[0].getBoundingClientRect();
+
+    let leftOffset = srect.left - rrect.left;
+    let barWidth   = (erect.right - rrect.left) - leftOffset;
+
+    let startStr = pad(shift.start)+":00";
+    let endStr   = pad(shift.end)+":00";
+    let label    = `${startStr} - ${endStr} (Day ${shift.day})`;
+
+    let bar = $(`
+      <div class="shift-bar ${colorClass}"
+           style="
+             position:absolute; 
+             top:8px; 
+             left:${leftOffset}px;
+             width:${barWidth}px;
+             height:44px;
+             border-radius:4px;
+             color:#fff;
+             display:flex;
+             align-items:center;
+             justify-content:center;
+             box-shadow:0 2px 4px rgba(0,0,0,0.15);
+             cursor:pointer;">
+        ${label}
+      </div>
+    `);
+    if(isTemp) bar.css('opacity','0.7');
+    cells.first().css('position','relative').append(bar);
+  }
+
+  // highlight from open..close for the day in a green tint
+  function highlightBusinessHours(){
+    let d = getViewDay();
+    let openH = businessInfo.hours[d].open;
+    let closeH= businessInfo.hours[d].close;
+    $('.sched-cell').each(function(){
+      let h = $(this).data('hour');
+      let hiDiv = $(this).find('.op-hours-highlight');
+      if(h >= openH && h < closeH){
+        hiDiv.css('background-color','rgba(48, 209, 88, 0.2)');
+      } else {
+        hiDiv.css('background-color','transparent');
+      }
+    });
+  }
+
+  function pad(n){ return (n<10?'0'+n:n); }
+
+  // Save as Draft
+  function saveAsDraft(){
+    $('#publish_action').val('draft');
+    doSave();
+  }
+
+  // Publish
+  function publishSchedule(){
+    $('#publish_action').val('publish');
+    doSave();
+  }
+
+  function doSave(){
+    $('#new_shifts').val(JSON.stringify(selectedShifts));
+    $('#scheduleSaveForm').submit();
+  }
+</script>
+{% endblock %}
