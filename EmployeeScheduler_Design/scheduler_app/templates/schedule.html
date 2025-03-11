@@ -2,46 +2,46 @@
 {% block content %}
 <h2>Schedule</h2>
 
-<!-- If we have a “saved_flag” or “schedule_published” we show a small success message -->
+<!-- Show “saved” or “published” messages -->
 {% if saved_flag == "1" %}
-<div class="alert alert-success">
-  Schedule saved as draft!
-</div>
+<div class="alert alert-success">Schedule saved as draft!</div>
 {% elif saved_flag == "published" %}
-<div class="alert alert-info">
-  Schedule has been published!
-</div>
+<div class="alert alert-info">Schedule has been published!</div>
 {% endif %}
 
-<!-- Existing Employees -->
+<!-- We list stations instead of employees on the left. -->
+{% if stations %}
+<div class="mb-3">
+  <h5>Stations:</h5>
+  <ul>
+    {% for st in stations %}
+    <li>{{ st.name }} ({{ st.type }})</li>
+    {% endfor %}
+  </ul>
+  <p class="text-muted">Each station is a row in the table below. Drag to assign an employee & time.</p>
+</div>
+{% else %}
+<p>No stations yet. Go to “Stations” page to add some!</p>
+{% endif %}
+
+<!-- We also show a quick employee list, so user knows who is available -->
 {% if employees %}
-<div class="mb-4">
-  <h5>Existing Employees</h5>
-  <ul class="list-group">
-    {% for emp in employees if emp.color is defined %}
-    <li class="list-group-item d-flex justify-content-between align-items-center">
-      <div>
-        <strong>{{ emp.name }}</strong>
-        {% if emp.type %}- <small>{{ emp.type }}</small>{% endif %}
-        <span class="ms-2 badge bg-secondary">{{ emp.color }}</span>
-      </div>
-      <!-- separate form for removing an employee -->
-      <form method="POST" style="margin:0;">
-        <input type="hidden" name="action" value="remove_employee">
-        <input type="hidden" name="remove_id" value="{{ emp.id }}">
-        <button class="btn btn-danger btn-sm">Remove</button>
-      </form>
-    </li>
+<div class="mb-3">
+  <h5>Available Employees:</h5>
+  <ul>
+    {% for emp in employees %}
+    <li><span class="{{ emp.color }}" style="padding:4px; border-radius:4px; color:#fff;">
+      {{ emp.name }} ({{ emp.type or 'N/A' }})
+    </span></li>
     {% endfor %}
   </ul>
 </div>
 {% else %}
-<p>No employees yet. Go to the Employees page to add some!</p>
+<p>No employees yet. Go to “Employees” page to add some!</p>
 {% endif %}
 
-<!-- SHIFT CREATION DAY CHECKBOXES -->
+<!-- SHIFT CREATION DAY CHECKBOXES (like before) -->
 <div class="mb-3" id="dayToggles" style="display:flex; gap:1rem; align-items:center;">
-  <span>Days to Assign:</span>
   <label><input type="checkbox" value="0" checked> Mon</label>
   <label><input type="checkbox" value="1" checked> Tue</label>
   <label><input type="checkbox" value="2" checked> Wed</label>
@@ -67,35 +67,34 @@
   </div>
 </div>
 
-<h5>24-Hour Schedule</h5>
 <p class="text-muted">
-  Check the days you want to **assign** for a new shift, pick which **day to view** the schedule for, 
-  then **click‐and‐drag** across hour cells. 
-  The green tinted area shows operating hours for the **viewed** day.
+  Click-and-drag on a station’s row to create a shift. You’ll pick which employee is assigned for that shift.
 </p>
 
-<!-- separate form for saving schedule -->
+<!-- SCHEDULE TABLE: a row for each station -->
 <form method="POST" action="{{ url_for('save_schedule') }}" id="scheduleSaveForm">
   <input type="hidden" name="new_shifts" id="new_shifts">
   <input type="hidden" name="publish_action" id="publish_action" value="draft">
 
-  <table class="table table-bordered" id="scheduleTable" style="overflow:hidden;">
+  <table class="table table-bordered" id="scheduleTable">
     <thead>
       <tr style="background-color:#0d6efd; color:#fff;">
-        <th>Employee</th>
+        <th>Station</th>
         {% for hour in range(24) %}
           <th>{{ hour }}</th>
         {% endfor %}
       </tr>
     </thead>
     <tbody>
-      {% for emp in employees if emp.color is defined %}
-      <tr data-emp-id="{{ emp.id }}" data-emp-color="{{ emp.color }}">
-        <td style="width:120px; font-weight:600;">{{ emp.name }}</td>
+      {% for st in stations %}
+      <tr data-station-id="{{ st.id }}">
+        <td style="width:140px; font-weight:600;">{{ st.name }}</td>
         {% for hour in range(24) %}
         <td class="sched-cell" data-hour="{{ hour }}" style="width:40px; height:60px; position:relative;">
-          <div class="cell-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair;"></div>
-          <div class="op-hours-highlight" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></div>
+          <div class="cell-overlay"
+               style="position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair;"></div>
+          <div class="op-hours-highlight"
+               style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></div>
         </td>
         {% endfor %}
       </tr>
@@ -109,38 +108,41 @@
   </div>
 </form>
 
-<!-- jQuery + JS -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-  let selectedShifts = JSON.parse('{{ schedule|tojson|safe }}') || [];
+  /*
+    SHIFT structure: { station_id, employee_id, start, end, day }
+    We ask the user which employee to assign after they drag.
+  */
+  let selectedShifts = JSON.parse('{{ schedule|tojson|safe }}' || '[]');
   let businessInfo   = JSON.parse(`{{ business|tojson|safe }}`);
 
   let isMouseDown = false;
   let startCell = null;
   let endCell   = null;
-  let startRow  = null;
+  let startStationId = null;
   let tempShift = null;
 
   $(document).ready(function(){
     redrawShifts();
     highlightBusinessHours();
 
-    // If user changes "View Day", re-draw
     $('#viewDaySelect').on('change', function(){
       redrawShifts();
       highlightBusinessHours();
     });
 
-    // SHIFT DRAG
+    // DRAG
     $('.cell-overlay').on('mousedown', function(e){
       e.preventDefault();
       isMouseDown = true;
       startCell = $(this).closest('.sched-cell');
       endCell   = startCell;
-      startRow  = $(this).closest('tr');
+      startStationId = $(this).closest('tr').data('station-id');
       let minHour = startCell.data('hour');
       tempShift = {
-        employee_id: startRow.data('emp-id'),
+        station_id: startStationId,
+        employee_id: null, // we’ll pick after dragging
         start: minHour,
         end:   minHour+1,
         days:  getCheckedDays()
@@ -150,8 +152,8 @@
 
     $('.cell-overlay').on('mouseover', function(){
       if(isMouseDown && tempShift){
-        let row = $(this).closest('tr');
-        if(row[0] === startRow[0]){
+        let stId = $(this).closest('tr').data('station-id');
+        if(stId === startStationId){
           endCell = $(this).closest('.sched-cell');
           let minH = Math.min(startCell.data('hour'), endCell.data('hour'));
           let maxH = Math.max(startCell.data('hour'), endCell.data('hour')) + 1;
@@ -163,27 +165,60 @@
     });
 
     $(document).on('mouseup', function(e){
-      if(isMouseDown){
-        isMouseDown = false;
-        if(tempShift){
-          // finalize => remove old shift for each day & add new
-          tempShift.days.forEach(d => {
-            selectedShifts = selectedShifts.filter(s =>
-              !(s.employee_id === tempShift.employee_id && s.day === d)
-            );
-            selectedShifts.push({
-              employee_id: tempShift.employee_id,
-              start: tempShift.start,
-              end:   tempShift.end,
-              day:   d
-            });
-          });
+      if(!isMouseDown) return;
+      isMouseDown = false;
+      if(tempShift){
+        // Prompt user: which employee is assigned?
+        let empNameOrId = prompt("Which employee? (Enter EXACT name or ID.)", "");
+        if(!empNameOrId){
+          // cancel
           tempShift = null;
           redrawShifts();
+          return;
         }
+        // In real life, we might show a dropdown. For now, let's find an employee by ID or name
+        let matchedEmployee = findEmployee(empNameOrId);
+        if(!matchedEmployee){
+          alert("No matching employee found!");
+          tempShift = null;
+          redrawShifts();
+          return;
+        }
+        tempShift.employee_id = matchedEmployee.id;
+
+        // finalize => remove old shift for those days + station + employee
+        // Actually, you might want to allow multiple employees on same station if that’s valid
+        tempShift.days.forEach(d => {
+          // remove old shift for this station+day if you only allow one shift per station
+          // or if you only want to remove old shift for that same employee. Up to your logic
+          selectedShifts = selectedShifts.filter(s =>
+            !(s.station_id===tempShift.station_id && s.employee_id===tempShift.employee_id && s.day===d)
+          );
+          selectedShifts.push({
+            station_id: tempShift.station_id,
+            employee_id: tempShift.employee_id,
+            start: tempShift.start,
+            end:   tempShift.end,
+            day:   d
+          });
+        });
+
+        tempShift = null;
+        redrawShifts();
       }
     });
   });
+
+  function findEmployee(empNameOrId){
+    let eId = parseInt(empNameOrId);
+    if(!isNaN(eId)){
+      // search by ID
+      return {{ employees|tojson|safe }}.find(e => e.id === eId);
+    } else {
+      // search by name
+      return {{ employees|tojson|safe }}.find(e => e.name.toLowerCase()===empNameOrId.toLowerCase());
+    }
+  }
 
   function getCheckedDays(){
     let days = [];
@@ -197,13 +232,17 @@
   }
 
   function redrawShifts(){
+    // remove old bars
     $('.shift-bar').remove();
-    selectedShifts.forEach(s => drawBar(s, false));
+    // draw final shifts
+    selectedShifts.forEach(s => drawBar(s,false));
+    // draw temp shift
     if(tempShift){
       tempShift.days.forEach(d => {
-        if(d === getViewDay()){
+        if(d===getViewDay()){
           drawBar({
-            employee_id: tempShift.employee_id,
+            station_id: tempShift.station_id,
+            employee_id: tempShift.employee_id, 
             start: tempShift.start,
             end:   tempShift.end,
             day:   d
@@ -215,14 +254,14 @@
 
   function drawBar(shift,isTemp){
     let viewDay = getViewDay();
-    if(shift.day !== viewDay) return;
-    let row = $('tr[data-emp-id="'+ shift.employee_id +'"]');
+    if(shift.day!==viewDay) return;
+    // find station row
+    let row = $('tr[data-station-id="'+ shift.station_id+'"]');
     if(!row.length) return;
-    let colorClass = row.data('emp-color') || 'block-blue';
 
     let cells = row.find('.sched-cell');
     let scell = cells.eq(shift.start);
-    let ecell = cells.eq(shift.end -1);
+    let ecell = cells.eq(shift.end-1);
     if(!scell.length || !ecell.length) return;
 
     let srect = scell[0].getBoundingClientRect();
@@ -231,25 +270,21 @@
 
     let leftOffset = srect.left - rrect.left;
     let barWidth   = (erect.right - rrect.left) - leftOffset;
+    let startStr   = pad(shift.start)+":00";
+    let endStr     = pad(shift.end)+":00";
 
-    let startStr = pad(shift.start)+":00";
-    let endStr   = pad(shift.end)+":00";
-    let label    = `${startStr} - ${endStr} (Day ${shift.day})`;
+    let assignedEmp = {{ employees|tojson|safe }}.find(e => e.id===shift.employee_id);
+    let colorClass  = assignedEmp ? assignedEmp.color : "block-blue";
+    let label       = assignedEmp ? assignedEmp.name : "Unassigned";
+    label += ` ${startStr} - ${endStr} (Day ${shift.day})`;
 
     let bar = $(`
       <div class="shift-bar ${colorClass}"
            style="
-             position:absolute; 
-             top:8px; 
-             left:${leftOffset}px;
-             width:${barWidth}px;
-             height:44px;
-             border-radius:4px;
-             color:#fff;
-             display:flex;
-             align-items:center;
-             justify-content:center;
-             box-shadow:0 2px 4px rgba(0,0,0,0.15);
+             position:absolute; top:8px; left:${leftOffset}px;
+             width:${barWidth}px; height:44px; border-radius:4px;
+             color:#fff; display:flex; align-items:center; 
+             justify-content:center; box-shadow:0 2px 4px rgba(0,0,0,0.15);
              cursor:pointer;">
         ${label}
       </div>
@@ -258,7 +293,6 @@
     cells.first().css('position','relative').append(bar);
   }
 
-  // highlight from open..close for the day in a green tint
   function highlightBusinessHours(){
     let d = getViewDay();
     let openH = businessInfo.hours[d].open;
@@ -266,28 +300,24 @@
     $('.sched-cell').each(function(){
       let h = $(this).data('hour');
       let hiDiv = $(this).find('.op-hours-highlight');
-      if(h >= openH && h < closeH){
+      if(h>=openH && h<closeH){
         hiDiv.css('background-color','rgba(48, 209, 88, 0.2)');
       } else {
         hiDiv.css('background-color','transparent');
       }
     });
   }
-
   function pad(n){ return (n<10?'0'+n:n); }
 
-  // Save as Draft
+  // Save logic
   function saveAsDraft(){
     $('#publish_action').val('draft');
     doSave();
   }
-
-  // Publish
   function publishSchedule(){
     $('#publish_action').val('publish');
     doSave();
   }
-
   function doSave(){
     $('#new_shifts').val(JSON.stringify(selectedShifts));
     $('#scheduleSaveForm').submit();

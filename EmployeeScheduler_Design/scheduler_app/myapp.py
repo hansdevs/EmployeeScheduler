@@ -4,27 +4,31 @@ import json
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
+# =====================
 # In-memory "database"
+# =====================
+
 BUSINESS_INFO = {
     "name": "Andreas Law Firm",
     "industry": "Law Firm",
     "requirements": ["Office Desk", "Office Desk"],
     "hours": {
-        0: {"open":8, "close":17},  
-        1: {"open":8, "close":17},  
+        0: {"open":8, "close":17},
+        1: {"open":8, "close":17},
         2: {"open":8, "close":17},
         3: {"open":8, "close":17},
         4: {"open":8, "close":17},
-        5: {"open":0, "close":0},   
-        6: {"open":0, "close":0},   
+        5: {"open":0, "close":0},
+        6: {"open":0, "close":0},
     }
 }
 
 EMPLOYEES = []
-SCHEDULE = []
-SCHEDULE_PUBLISHED = False  # Example to track “draft” vs “published”
+STATIONS  = []  # each station = {id, name, type?}
+SCHEDULE  = []  # each shift = {station_id, employee_id, start, end, day}
 
-# ROUTES
+SCHEDULE_PUBLISHED = False
+
 @app.route("/")
 def home():
     return redirect(url_for("schedule_page"))
@@ -41,16 +45,15 @@ def business_page():
 
         for d in range(7):
             try:
-                openH = int(request.form.get(f"open_{d}","0"))
-                closeH= int(request.form.get(f"close_{d}","0"))
-                BUSINESS_INFO["hours"][d]["open"]  = openH
-                BUSINESS_INFO["hours"][d]["close"] = closeH
+                o = int(request.form.get(f"open_{d}","0"))
+                c = int(request.form.get(f"close_{d}","0"))
+                BUSINESS_INFO["hours"][d]["open"]  = o
+                BUSINESS_INFO["hours"][d]["close"] = c
             except:
                 BUSINESS_INFO["hours"][d]["open"]  = 0
                 BUSINESS_INFO["hours"][d]["close"] = 0
 
         return redirect(url_for("business_page"))
-
     return render_template("business.html", business=BUSINESS_INFO)
 
 # ----- EMPLOYEES PAGE -----
@@ -70,30 +73,40 @@ def employees_page():
                 "color": new_color
             })
         return redirect(url_for("employees_page"))
-
     return render_template("employees.html", employees=EMPLOYEES)
+
+# ----- STATIONS PAGE -----
+@app.route("/stations", methods=["GET","POST"])
+def stations_page():
+    """
+    Manage stations (like “Cash Register #1”, “Computer #2”).
+    Each is a row on the schedule where you can assign employees.
+    """
+    global STATIONS
+    if request.method == "POST":
+        # Add station
+        new_name = request.form.get("station_name","").strip()
+        new_type = request.form.get("station_type","").strip()
+        if new_name:
+            new_id = max([s["id"] for s in STATIONS], default=0) + 1
+            STATIONS.append({
+                "id": new_id,
+                "name": new_name,
+                "type": new_type
+            })
+        return redirect(url_for("stations_page"))
+
+    return render_template("stations.html", stations=STATIONS)
 
 # ----- SCHEDULE PAGE -----
 @app.route("/schedule", methods=["GET","POST"])
 def schedule_page():
-    """
-    The main schedule page:
-      - We have a separate form for removing employees,
-        and a separate form (in JS) for saving shifts.
-    """
-    global EMPLOYEES, SCHEDULE, BUSINESS_INFO, SCHEDULE_PUBLISHED
-    saved_flag = request.args.get("saved","0")  # or “published”
+    global SCHEDULE, STATIONS, EMPLOYEES, BUSINESS_INFO, SCHEDULE_PUBLISHED
+    saved_flag = request.args.get("saved","0")
 
-    # We only handle "remove_employee" here via POST
-    if request.method == "POST":
-        action = request.form.get("action")
-        if action == "remove_employee":
-            remove_id = int(request.form.get("remove_id","0"))
-            EMPLOYEES = [e for e in EMPLOYEES if e["id"] != remove_id]
-            SCHEDULE  = [s for s in SCHEDULE if s["employee_id"] != remove_id]
-        return redirect(url_for("schedule_page"))
-
+    # We only handle "remove_station" or similar if you wanted that
     return render_template("schedule.html",
+                           stations=STATIONS,
                            employees=EMPLOYEES,
                            schedule=SCHEDULE,
                            business=BUSINESS_INFO,
@@ -102,11 +115,6 @@ def schedule_page():
 
 @app.route("/save_schedule", methods=["POST"])
 def save_schedule():
-    """
-    Expects 'new_shifts' = JSON array of {employee_id, start, end, day}
-    Overwrites SCHEDULE with that data, then
-    if user hit “Publish,” set SCHEDULE_PUBLISHED=True.
-    """
     global SCHEDULE, SCHEDULE_PUBLISHED
     new_shifts_json = request.form.get("new_shifts","[]")
     publish_action  = request.form.get("publish_action","draft")
@@ -115,11 +123,8 @@ def save_schedule():
         loaded = json.loads(new_shifts_json)
     except:
         loaded = []
-
-    # Overwrite the entire schedule
     SCHEDULE = loaded
 
-    # If user clicked “Publish,” set SCHEDULE_PUBLISHED
     if publish_action == "publish":
         SCHEDULE_PUBLISHED = True
         return redirect(url_for("schedule_page", saved="published"))
@@ -127,18 +132,15 @@ def save_schedule():
         SCHEDULE_PUBLISHED = False
         return redirect(url_for("schedule_page", saved="1"))
 
-# ----- OFFICIAL SCHEDULE PAGE -----
+# ----- OFFICIAL SCHEDULE -----
 @app.route("/official_schedule")
 def official_schedule():
-    """
-    Read-only page that shows each day’s final shifts.
-    Only if SCHEDULE_PUBLISHED is True do we consider it “official.”
-    But you can show them regardless if you prefer.
-    """
-    global EMPLOYEES, SCHEDULE, SCHEDULE_PUBLISHED
+    global EMPLOYEES, STATIONS, SCHEDULE, BUSINESS_INFO, SCHEDULE_PUBLISHED
     return render_template("official_schedule.html",
                            employees=EMPLOYEES,
+                           stations=STATIONS,
                            schedule=SCHEDULE,
+                           business=BUSINESS_INFO,
                            is_published=SCHEDULE_PUBLISHED)
 
 if __name__ == "__main__":
