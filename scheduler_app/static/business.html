@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Business Information</title>
+  <!-- Bootstrap CSS (optional) -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+  />
+  <!-- Optionally include your own CSS -->
+  <link rel="stylesheet" href="schedule.css" />
+</head>
+<body style="background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, sans-serif;">
+  <!-- TOP NAV BAR -->
+  <div style="background-color:#0d6efd; color:#fff; padding:0.5rem 1rem; display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <strong>BizMan</strong>
+      <!-- Nav links to your other pages -->
+      <a href="schedule.html" style="color:#ffffffcc; margin-left:1rem;">Schedule</a>
+      <a href="business.html" style="color:#ffffffcc; margin-left:1rem;">Business</a>
+      <a href="employees.html" style="color:#ffffffcc; margin-left:1rem;">Employees</a>
+      <a href="stations.html" style="color:#ffffffcc; margin-left:1rem;">Stations</a>
+      <a href="official.html" style="color:#ffffffcc; margin-left:1rem;">Official&nbsp;Schedule</a>
+    </div>
+    <div id="localTime" style="font-size:0.9rem; color:#ffffffcc;"></div>
+  </div>
+
+  <div class="container my-4">
+    <h2>Business Information</h2>
+
+    <!-- Button to load current business data (or we can do auto-load on DOMContentLoaded) -->
+    <button class="btn btn-primary mb-3" onclick="fetchBusinessInfo()">Load Business Info</button>
+
+    <!-- Business Form -->
+    <form id="businessForm" class="mt-3" onsubmit="event.preventDefault(); saveBusinessInfo();">
+      <div class="mb-3">
+        <label class="form-label">Business Name</label>
+        <input type="text" id="bizName" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Industry</label>
+        <input type="text" id="bizIndustry" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Requirements (comma-separated)</label>
+        <input type="text" id="bizRequirements" class="form-control">
+      </div>
+
+      <!-- Operating Hours for each day -->
+      <h5 class="mt-4">Operating Hours</h5>
+      <p class="text-muted">Set open & close hour (0..24) for each day (0=Mon, 1=Tue, etc.)</p>
+      <div class="row" id="bizHoursContainer">
+        <!-- We'll fill this with JS for days 0..6 -->
+      </div>
+
+      <button type="submit" class="btn btn-primary">Save</button>
+    </form>
+  </div>
+
+  <!-- Bootstrap JS (optional) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Optional local time display -->
+  <script>
+    function updateLocalTime(){
+      const now = new Date();
+      const timeString = now.toLocaleString([], { 
+        dateStyle: 'short',
+        timeStyle: 'medium' 
+      });
+      document.getElementById('localTime').textContent = timeString;
+    }
+    setInterval(updateLocalTime, 1000);
+    updateLocalTime();
+  </script>
+
+  <!-- Main Business Logic -->
+  <script>
+    // We'll store the business info here once fetched
+    let businessData = null;
+
+    async function fetchBusinessInfo() {
+      try {
+        const res = await fetch('/api/business');
+        if (!res.ok) {
+          throw new Error('Failed to load business info');
+        }
+        businessData = await res.json();
+        renderBusinessForm(businessData);
+      } catch (err) {
+        console.error(err);
+        alert('Error loading business info');
+      }
+    }
+
+    function renderBusinessForm(biz) {
+      // Populate top-level fields
+      document.getElementById('bizName').value = biz.name || '';
+      document.getElementById('bizIndustry').value = biz.industry || '';
+      if (Array.isArray(biz.requirements)) {
+        document.getElementById('bizRequirements').value = biz.requirements.join(', ');
+      } else {
+        document.getElementById('bizRequirements').value = '';
+      }
+
+      // Operating hours
+      const hoursContainer = document.getElementById('bizHoursContainer');
+      hoursContainer.innerHTML = '';
+      const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+      // biz.hours is something like {0:{open:8,close:17},1:{open:8,close:17},...}
+      for(let d=0; d<7; d++){
+        const dayHours = biz.hours && biz.hours[d] ? biz.hours[d] : {open:0, close:0};
+        const openVal = dayHours.open ?? 0;
+        const closeVal = dayHours.close ?? 0;
+
+        // Build a small chunk of HTML for each day
+        const col = document.createElement('div');
+        col.className = 'col-md-4 mb-2';
+        col.innerHTML = `
+          <label class="form-label">Day ${d} (${dayNames[d]})</label>
+          <div class="input-group">
+            <input type="number" class="form-control" placeholder="Open" id="open_${d}" value="${openVal}" />
+            <span class="input-group-text">-</span>
+            <input type="number" class="form-control" placeholder="Close" id="close_${d}" value="${closeVal}" />
+          </div>
+        `;
+        hoursContainer.appendChild(col);
+      }
+    }
+
+    async function saveBusinessInfo() {
+      // Gather updated values from the form
+      const name = document.getElementById('bizName').value.trim() || 'Unnamed Biz';
+      const industry = document.getElementById('bizIndustry').value.trim() || '';
+      const reqs = document.getElementById('bizRequirements').value.trim() || '';
+
+      // Build the hours object
+      let hoursObj = {};
+      for (let d=0; d<7; d++){
+        const openVal = parseInt(document.getElementById(`open_${d}`).value, 10) || 0;
+        const closeVal= parseInt(document.getElementById(`close_${d}`).value, 10) || 0;
+        hoursObj[d] = { open: openVal, close: closeVal };
+      }
+
+      // Prepare the POST data
+      const payload = {
+        name,
+        industry,
+        requirements: reqs,  // can be comma-separated, server will handle splitting or we can do it here
+        hours: hoursObj
+      };
+
+      try {
+        const res = await fetch('/api/business', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if(!res.ok) {
+          throw new Error('Failed to save business info');
+        }
+        const data = await res.json();
+        console.log(data);
+        alert('Business info saved successfully!');
+      } catch (err) {
+        console.error(err);
+        alert('Error saving business info');
+      }
+    }
+
+    // Optionally auto-load the business info on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchBusinessInfo();
+    });
+  </script>
+</body>
+</html>

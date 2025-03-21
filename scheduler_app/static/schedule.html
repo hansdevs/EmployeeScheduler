@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Schedule</title>
+
+  <!-- Bootstrap CSS (optional) -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+  />
+  
+  <!-- Optional: your own CSS for block colors, etc. -->
+  <link rel="stylesheet" href="schedule.css" />
+</head>
+<body style="background-color:#f8f9fa; font-family:'Segoe UI', Tahoma, sans-serif;">
+  <!-- TOP NAV BAR -->
+  <div style="background-color:#0d6efd; color:#fff; padding:0.5rem 1rem; display:flex; justify-content:space-between; align-items:center;">
+    <!-- LEFT SIDE: Brand + Nav Links (Update links to your actual HTML pages) -->
+    <div>
+      <strong>Schedyler</strong>
+      <a href="schedule.html" style="color:#ffffffcc; margin-left:1rem;">Schedule</a>
+      <a href="business.html" style="color:#ffffffcc; margin-left:1rem;">Business</a>
+      <a href="employees.html" style="color:#ffffffcc; margin-left:1rem;">Employees</a>
+      <a href="stations.html" style="color:#ffffffcc; margin-left:1rem;">Stations</a>
+      <a href="official.html" style="color:#ffffffcc; margin-left:1rem;">Official&nbsp;Schedule</a>
+    </div>
+    <!-- RIGHT SIDE: Local system time -->
+    <div id="localTime" style="font-size:0.9rem; color:#ffffffcc;"></div>
+  </div>
+
+  <div class="container my-4">
+    <h2>Schedule</h2>
+
+    <!-- We can optionally display a saved/published message here if desired. -->
+    <div id="statusMessage"></div>
+
+    <!-- Stations List (populated by JS) -->
+    <div id="stationsList" class="mb-3"></div>
+
+    <!-- Employees List (populated by JS) -->
+    <div id="employeesList" class="mb-3"></div>
+
+    <!-- SHIFT CREATION DAY CHECKBOXES -->
+    <div class="mb-3" id="dayToggles" style="display:flex; gap:1rem; align-items:center;">
+      <label><input type="checkbox" value="0" checked> Mon</label>
+      <label><input type="checkbox" value="1" checked> Tue</label>
+      <label><input type="checkbox" value="2" checked> Wed</label>
+      <label><input type="checkbox" value="3" checked> Thu</label>
+      <label><input type="checkbox" value="4" checked> Fri</label>
+      <label><input type="checkbox" value="5" checked> Sat</label>
+      <label><input type="checkbox" value="6" checked> Sun</label>
+    </div>
+
+    <!-- VIEW DAY FILTER -->
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <label class="form-label">View Day:</label>
+        <select id="viewDaySelect" class="form-select">
+          <option value="0">Monday (0)</option>
+          <option value="1">Tuesday (1)</option>
+          <option value="2">Wednesday (2)</option>
+          <option value="3">Thursday (3)</option>
+          <option value="4">Friday (4)</option>
+          <option value="5">Saturday (5)</option>
+          <option value="6">Sunday (6)</option>
+        </select>
+      </div>
+    </div>
+
+    <p class="text-muted">
+      Click-and-drag on a station’s row to create a shift. You’ll pick which employee is assigned for that shift.
+    </p>
+
+    <!-- SCHEDULE TABLE -->
+    <div class="table-responsive">
+      <table class="table table-bordered" id="scheduleTable">
+        <thead>
+          <tr style="background-color:#0d6efd; color:#fff;">
+            <th>Station</th>
+            <!-- We'll generate hours (0..23) in JS -->
+          </tr>
+        </thead>
+        <tbody id="scheduleTbody">
+          <!-- We'll generate stations in JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-3 text-end">
+      <button type="button" class="btn btn-success" onclick="saveAsDraft()">Save as Draft</button>
+      <button type="button" class="btn btn-info" onclick="publishSchedule()">Publish Schedule</button>
+    </div>
+  </div>
+
+  <!-- jQuery (since your drag logic uses it) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- Bootstrap JS (optional) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Optional JS snippet to show system time, updated every second -->
+  <script>
+    function updateLocalTime(){
+      const now = new Date();
+      const timeString = now.toLocaleString([], { 
+        dateStyle: 'short',
+        timeStyle: 'medium' 
+      });
+      document.getElementById('localTime').textContent = timeString;
+    }
+    setInterval(updateLocalTime, 1000);
+    updateLocalTime(); // initial call
+  </script>
+
+  <!-- Main Schedule Logic -->
+  <script>
+    // Data we will fetch from /api/schedule
+    let selectedShifts = [];
+    let businessInfo   = {};
+    let employees      = [];
+    let stations       = [];
+    let isPublished    = false;
+
+    let isMouseDown    = false;
+    let startCell      = null;
+    let endCell        = null;
+    let startStationId = null;
+    let tempShift      = null;
+
+    // On page load, fetch schedule data from the API
+    $(document).ready(async function(){
+      await loadScheduleData();
+      setupDragLogic();
+      // Show any initial highlight
+      highlightBusinessHours();
+    });
+
+    async function loadScheduleData() {
+      try {
+        let res = await fetch('/api/schedule');
+        if(!res.ok){
+          throw new Error('Failed to load schedule data');
+        }
+        let data = await res.json();
+
+        // We'll store the fetched data in our variables:
+        selectedShifts = data.schedule || [];
+        businessInfo   = data.business || {};
+        employees      = data.employees || [];
+        stations       = data.stations || [];
+        isPublished    = data.is_published || false;
+
+        // Display a note if already published
+        const msgDiv = document.getElementById('statusMessage');
+        msgDiv.innerHTML = isPublished 
+          ? '<div class="alert alert-info">Schedule is currently published.</div>'
+          : '';
+
+        // Render station list, employee list, and schedule table
+        renderStationsList(stations);
+        renderEmployeesList(employees);
+        buildScheduleTable(stations);
+
+        // Once table is built, we can do the shift highlighting
+        redrawShifts();
+        highlightBusinessHours();
+
+      } catch (err) {
+        console.error(err);
+        alert(err.message);
+      }
+    }
+
+    function renderStationsList(stationsArr) {
+      const div = document.getElementById('stationsList');
+      if(!stationsArr || stationsArr.length === 0){
+        div.innerHTML = `<p>No stations yet. Go to “Stations” page to add some!</p>`;
+        return;
+      }
+      let html = `
+        <div class="mb-3">
+          <h5>Stations:</h5>
+          <ul>
+      `;
+      stationsArr.forEach(st => {
+        html += `<li>${st.name} (${st.type || 'N/A'})</li>`;
+      });
+      html += `</ul>
+        <p class="text-muted">Each station is a row in the table below. Drag to assign an employee & time.</p>
+      </div>`;
+      div.innerHTML = html;
+    }
+
+    function renderEmployeesList(empArr) {
+      const div = document.getElementById('employeesList');
+      if(!empArr || empArr.length === 0){
+        div.innerHTML = `<p>No employees yet. Go to “Employees” page to add some!</p>`;
+        return;
+      }
+      let html = `
+        <div class="mb-3">
+          <h5>Available Employees:</h5>
+          <ul>
+      `;
+      empArr.forEach(emp => {
+        html += `
+          <li>
+            <span class="${emp.color}" style="padding:4px; border-radius:4px; color:#fff;">
+              ${emp.name} (${emp.type || 'N/A'})
+            </span>
+          </li>
+        `;
+      });
+      html += `</ul></div>`;
+      div.innerHTML = html;
+    }
+
+    // Build the table with 24 columns for hours 0..23, plus station name col
+    function buildScheduleTable(stationsArr) {
+      // Build <thead> hours
+      const thead = document.querySelector('#scheduleTable thead tr');
+      // Clear any existing <th> (beyond the first "Station" header).
+      thead.innerHTML = `<th>Station</th>`;
+      for(let hour = 0; hour < 24; hour++){
+        thead.innerHTML += `<th>${hour}</th>`;
+      }
+
+      // Build <tbody> row for each station
+      const tbody = document.getElementById('scheduleTbody');
+      tbody.innerHTML = ''; // clear existing
+      stationsArr.forEach(st => {
+        let rowHtml = `<tr data-station-id="${st.id}">
+                         <td style="width:140px; font-weight:600;">${st.name}</td>`;
+        for(let hour=0; hour<24; hour++){
+          rowHtml += `
+            <td class="sched-cell" data-hour="${hour}" style="width:40px; height:60px; position:relative;">
+              <div class="cell-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair;"></div>
+              <div class="op-hours-highlight" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></div>
+            </td>
+          `;
+        }
+        rowHtml += `</tr>`;
+        tbody.innerHTML += rowHtml;
+      });
+    }
+
+    // Set up the drag logic using jQuery (similar to your original code)
+    function setupDragLogic(){
+      // Because we rebuild the table, we have to delegate or re-bind events
+      $(document).off('mousedown', '.cell-overlay');
+      $(document).off('mouseover', '.cell-overlay');
+      $(document).off('mouseup');
+
+      $(document).on('mousedown', '.cell-overlay', function(e){
+        e.preventDefault();
+        isMouseDown = true;
+        startCell = $(this).closest('.sched-cell');
+        endCell   = startCell;
+        startStationId = $(this).closest('tr').data('station-id');
+        let minHour = startCell.data('hour');
+        tempShift = {
+          station_id: startStationId,
+          employee_id: null,
+          start: minHour,
+          end: minHour + 1,
+          days: getCheckedDays()
+        };
+        redrawShifts();
+      });
+
+      $(document).on('mouseover', '.cell-overlay', function(){
+        if(isMouseDown && tempShift){
+          let stId = $(this).closest('tr').data('station-id');
+          if(stId === startStationId){
+            endCell = $(this).closest('.sched-cell');
+            let minH = Math.min(startCell.data('hour'), endCell.data('hour'));
+            let maxH = Math.max(startCell.data('hour'), endCell.data('hour')) + 1;
+            tempShift.start = minH;
+            tempShift.end   = maxH;
+            redrawShifts();
+          }
+        }
+      });
+
+      $(document).on('mouseup', function(){
+        if(!isMouseDown) return;
+        isMouseDown = false;
+        if(tempShift){
+          // Prompt the user for an employee name/ID
+          let empNameOrId = prompt("Which employee? (Enter EXACT name or ID.)", "");
+          if(!empNameOrId){
+            // canceled
+            tempShift = null;
+            redrawShifts();
+            return;
+          }
+          // Attempt to find the employee
+          let matchedEmployee = findEmployee(empNameOrId);
+          if(!matchedEmployee){
+            alert("No matching employee found!");
+            tempShift = null;
+            redrawShifts();
+            return;
+          }
+          tempShift.employee_id = matchedEmployee.id;
+
+          // finalize => remove old shift for those days + station + employee (if your logic requires)
+          tempShift.days.forEach(d => {
+            // remove old shift for same station+employee+day
+            selectedShifts = selectedShifts.filter(s => 
+              !(s.station_id===tempShift.station_id && 
+                s.employee_id===tempShift.employee_id && 
+                s.day===d)
+            );
+            // push new shift
+            selectedShifts.push({
+              station_id: tempShift.station_id,
+              employee_id: tempShift.employee_id,
+              start: tempShift.start,
+              end: tempShift.end,
+              day: d
+            });
+          });
+
+          tempShift = null;
+          redrawShifts();
+        }
+      });
+    }
+
+    function findEmployee(empNameOrId) {
+      // Try numeric ID first
+      let eId = parseInt(empNameOrId, 10);
+      if(!isNaN(eId)){
+        return employees.find(e => e.id === eId);
+      } else {
+        // match by name, ignoring case
+        return employees.find(e => e.name.toLowerCase() === empNameOrId.toLowerCase());
+      }
+    }
+
+    function getCheckedDays(){
+      let days = [];
+      $('#dayToggles input[type="checkbox"]:checked').each(function(){
+        days.push(parseInt($(this).val()));
+      });
+      return days;
+    }
+    function getViewDay(){
+      return parseInt($('#viewDaySelect').val());
+    }
+
+    // Redraw all shifts in the table
+    function redrawShifts(){
+      // Remove old bars
+      $('.shift-bar').remove();
+      // Draw final shifts
+      selectedShifts.forEach(s => drawBar(s, false));
+      // Draw temp shift
+      if(tempShift){
+        tempShift.days.forEach(d => {
+          if(d === getViewDay()){
+            drawBar({
+              station_id: tempShift.station_id,
+              employee_id: tempShift.employee_id,
+              start: tempShift.start,
+              end: tempShift.end,
+              day: d
+            }, true);
+          }
+        });
+      }
+    }
+
+    function drawBar(shift, isTemp){
+      let viewDay = getViewDay();
+      if(shift.day !== viewDay) return;
+      // find station row
+      let row = $('tr[data-station-id="'+shift.station_id+'"]');
+      if(!row.length) return;
+
+      let cells = row.find('.sched-cell');
+      let scell = cells.eq(shift.start);
+      let ecell = cells.eq(shift.end - 1);
+      if(!scell.length || !ecell.length) return;
+
+      let srect = scell[0].getBoundingClientRect();
+      let erect = ecell[0].getBoundingClientRect();
+      let rrect = cells.first()[0].getBoundingClientRect();
+
+      let leftOffset = srect.left - rrect.left;
+      let barWidth   = (erect.right - rrect.left) - leftOffset;
+      let startStr   = pad(shift.start)+":00";
+      let endStr     = pad(shift.end)+":00";
+
+      let assignedEmp = employees.find(e => e.id===shift.employee_id);
+      let colorClass  = assignedEmp ? assignedEmp.color : "block-blue";
+      let label       = assignedEmp ? assignedEmp.name : "Unassigned";
+      label += ` ${startStr} - ${endStr} (Day ${shift.day})`;
+
+      let bar = $(`
+        <div class="shift-bar ${colorClass}"
+             style="
+               position:absolute; top:8px; left:${leftOffset}px;
+               width:${barWidth}px; height:44px; border-radius:4px;
+               color:#fff; display:flex; align-items:center; 
+               justify-content:center; box-shadow:0 2px 4px rgba(0,0,0,0.15);
+               cursor:pointer;">
+          ${label}
+        </div>
+      `);
+      if(isTemp) bar.css('opacity','0.7');
+      cells.first().css('position','relative').append(bar);
+    }
+
+    function highlightBusinessHours(){
+      let d = getViewDay();
+      if(!businessInfo.hours || !businessInfo.hours[d]){
+        // If there's no hours info, just do nothing
+        return;
+      }
+      let openH  = businessInfo.hours[d].open;
+      let closeH = businessInfo.hours[d].close;
+      $('.sched-cell').each(function(){
+        let h = $(this).data('hour');
+        let hiDiv = $(this).find('.op-hours-highlight');
+        if(h >= openH && h < closeH){
+          hiDiv.css('background-color','rgba(48, 209, 88, 0.2)');
+        } else {
+          hiDiv.css('background-color','transparent');
+        }
+      });
+    }
+
+    function pad(n){ return (n<10?'0'+n:n); }
+
+    // ------------------------------
+    //  Saving (Draft or Publish)
+    // ------------------------------
+    async function saveAsDraft(){
+      try {
+        const body = { 
+          shifts: selectedShifts,
+          action: "draft"
+        };
+        let res = await fetch('/api/schedule', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        let data = await res.json();
+        console.log(data);
+        alert("Schedule saved as draft!");
+      } catch (err) {
+        console.error(err);
+        alert("Error saving schedule as draft");
+      }
+    }
+
+    async function publishSchedule(){
+      try {
+        const body = { 
+          shifts: selectedShifts,
+          action: "publish"
+        };
+        let res = await fetch('/api/schedule', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        let data = await res.json();
+        console.log(data);
+        if(data.status === 'published'){
+          alert("Schedule published successfully!");
+        } else {
+          alert("Schedule published? Response: " + JSON.stringify(data));
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Error publishing schedule");
+      }
+    }
+
+    // When the user changes the View Day, re-draw
+    $('#viewDaySelect').on('change', function(){
+      redrawShifts();
+      highlightBusinessHours();
+    });
+  </script>
+</body>
+</html>
