@@ -16,7 +16,7 @@
 <body style="background-color:#f8f9fa; font-family:'Segoe UI', Tahoma, sans-serif;">
   <!-- TOP NAV BAR -->
   <div style="background-color:#0d6efd; color:#fff; padding:0.5rem 1rem; display:flex; justify-content:space-between; align-items:center;">
-    <!-- LEFT SIDE: Brand + Nav Links (Update links to your actual HTML pages) -->
+    <!-- LEFT SIDE: Brand + Nav Links -->
     <div>
       <strong>Scheduler Beta</strong>
       <a href="/pages/index.html"   style="color:#ffffffcc; margin-left:1rem;">Home</a>
@@ -33,7 +33,6 @@
   <div class="container my-4">
     <h2>Schedule</h2>
 
-    <!-- We can optionally display a saved/published message here if desired. -->
     <div id="statusMessage"></div>
 
     <!-- Stations List (populated by JS) -->
@@ -79,7 +78,6 @@
         <thead>
           <tr style="background-color:#0d6efd; color:#fff;">
             <th>Station</th>
-            <!-- We'll generate hours (0..23) in JS -->
           </tr>
         </thead>
         <tbody id="scheduleTbody">
