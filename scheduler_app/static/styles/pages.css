@@ -14,10 +14,11 @@
   --feature-card-bg: #fafafa;
   --footer-bg: #eeeeee;
 }
+/* #121212; */
 
 /* Dark Mode overrides */
 body.dark-mode {
-  --background-color: #121212;    /* Dark background */
+  --background-color: #000000;    /* Dark background */
   --text-color: #fafafa;         /* White-ish text */
   --accent-color: #14b8a6;       /* Teal accent for Dark Mode */
   --accent-text-color: #ffffff;

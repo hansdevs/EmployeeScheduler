@@ -190,6 +190,17 @@ def add_employee():
     EMPLOYEES.append(new_employee)
     return jsonify({"status": "ok", "employee": new_employee})
 
+# NEW DELETE ENDPOINT
+@app.route("/api/employees/<int:employee_id>", methods=["DELETE"])
+def delete_employee(employee_id):
+    global EMPLOYEES
+    employee = next((e for e in EMPLOYEES if e["id"] == employee_id), None)
+    if not employee:
+        return jsonify({"error": "Employee not found"}), 404
+
+    EMPLOYEES.remove(employee)
+    return jsonify({"status": "ok", "deleted_id": employee_id})
+
 # -------------------------
 # STATIONS API
 # -------------------------

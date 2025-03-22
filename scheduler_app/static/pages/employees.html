@@ -10,13 +10,28 @@
   />
   <!-- Optionally include your own custom CSS for color blocks, etc. -->
   <link rel="stylesheet" href="schedule.css" />
+  <style>
+    /* Red remove button styling */
+    .remove-btn {
+      background-color: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 0.4rem 0.8rem;
+      cursor: pointer;
+    }
+    .remove-btn:hover {
+      background-color: #c82333;
+    }
+  </style>
 </head>
 <body style="background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, sans-serif;">
   <!-- TOP NAV BAR -->
   <div style="background-color:#0d6efd; color:#fff; padding:0.5rem 1rem; display:flex; justify-content:space-between; align-items:center;">
     <div>
-      <strong>BizMan</strong>
+      <strong>Scheduler Beta</strong>
       <!-- Nav links to your other pages -->
+      <a href="/pages/index.html"   style="color:#ffffffcc; margin-left:1rem;">Home</a>
       <a href="/pages/schedule.html" style="color:#ffffffcc; margin-left:1rem;">Schedule</a>
       <a href="/pages/business.html" style="color:#ffffffcc; margin-left:1rem;">Business</a>
       <a href="/pages/employees.html" style="color:#ffffffcc; margin-left:1rem;">Employees</a>
@@ -38,6 +53,7 @@
           <th>Name</th>
           <th>Type/Role</th>
           <th>Color Class</th>
+          <th>Actions</th> <!-- Added column for Remove button -->
         </tr>
       </thead>
       <tbody id="empTableBody">
@@ -75,11 +91,11 @@
 
   <!-- Optional JS snippet to show local system time, updated every second -->
   <script>
-    function updateLocalTime(){
+    function updateLocalTime() {
       const now = new Date();
-      const timeString = now.toLocaleString([], { 
+      const timeString = now.toLocaleString([], {
         dateStyle: 'short',
-        timeStyle: 'medium' 
+        timeStyle: 'medium'
       });
       document.getElementById('localTime').textContent = timeString;
     }
@@ -108,7 +124,7 @@
       tbody.innerHTML = '';
 
       if (!employees || employees.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4">No employees found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5">No employees found.</td></tr>';
         return;
       }
 
@@ -119,6 +135,7 @@
           <td>${emp.name}</td>
           <td>${emp.type || ''}</td>
           <td>${emp.color || ''}</td>
+          <td><button class="remove-btn" onclick="removeEmployee(${emp.id})">Remove</button></td>
         `;
         tbody.appendChild(tr);
       });
@@ -164,6 +181,26 @@
       } catch (err) {
         console.error(err);
         alert('Error adding employee');
+      }
+    }
+
+    async function removeEmployee(id) {
+      // Basic confirmation
+      if (!confirm('Are you sure you want to remove this employee?')) {
+        return;
+      }
+      try {
+        const res = await fetch('/api/employees/' + id, {
+          method: 'DELETE'
+        });
+        if (!res.ok) {
+          throw new Error('Failed to remove employee');
+        }
+        console.log(`Employee ${id} removed`);
+        loadEmployees();
+      } catch (err) {
+        console.error(err);
+        alert('Error removing employee');
       }
     }
 
