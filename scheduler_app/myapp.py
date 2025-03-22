@@ -7,9 +7,9 @@ app.secret_key = "supersecretkey"
 # In-memory "database"
 # =====================
 BUSINESS_INFO = {
-    "name": "Andreas Law Firm",
-    "industry": "Law Firm",
-    "requirements": ["Office Desk", "Office Desk"],
+    "name": "John Doe's Retail Store",
+    "industry": "Retail",
+    # "requirements": ["Office Desk", "Office Desk"],
     "hours": {
         0: {"open": 8,  "close": 17},
         1: {"open": 8,  "close": 17},
