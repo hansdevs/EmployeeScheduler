@@ -45,11 +45,11 @@ def serve_landing():
 # -------------------------
 PROTECTED_PAGES = {
     "welcome.html",
-    "schedule.html",
-    "business.html",
-    "employees.html",
-    "stations.html",
-    "official.html"
+    "/pages/schedule.html",
+    "/pages/business.html",
+    "/pages/employees.html",
+    "/pages/stations.html",
+    "/pages/official.html"
 }
 
 @app.route("/pages/<path:filename>")
