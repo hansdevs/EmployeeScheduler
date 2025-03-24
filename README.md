@@ -18,6 +18,8 @@
 - Revamped user interface (UI)
 - Stations will no longer be required
 - Basic clock-in functionality
+- React added
+- Bootstrap added
 
 ---
 
