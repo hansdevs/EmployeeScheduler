@@ -2,50 +2,118 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcome to The Scheduler</title>
+  
+  <!-- Bootstrap CSS -->
   <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
   />
-  <!-- Optionally, your shared CSS in /styles/pages.css -->
-  <link rel="stylesheet" href="/styles/pages.css" />
+  
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/pages/schedule.css" />
 </head>
-<body style="background-color:#f8f9fa; font-family:'Segoe UI', Tahoma, sans-serif;">
-  <div style="background-color:#0d6efd; color:#fff; padding:0.5rem 1rem; display:flex; justify-content:space-between; align-items:center;">
-    <!-- LEFT SIDE: Brand + Nav Links -->
-
-        <!--Phase2: Add a variable for the username. "Welcome "username"-->
-
-    <div>
-      <strong>Scheduler Beta</strong>
-      <!-- Link to the pages: -->
-      <a href="/pages/index.html"   style="color:#ffffffcc; margin-left:1rem;">Home</a>
-      <a href="/pages/schedule.html"  style="color:#ffffffcc; margin-left:1rem;">Schedule</a>
-      <a href="/pages/business.html"  style="color:#ffffffcc; margin-left:1rem;">Business</a>
-      <a href="/pages/employees.html" style="color:#ffffffcc; margin-left:1rem;">Employees</a>
-      <a href="/pages/stations.html"  style="color:#ffffffcc; margin-left:1rem;">Stations</a>
-      <a href="/pages/official.html"  style="color:#ffffffcc; margin-left:1rem;">Official&nbsp;Schedule</a>
+<body>
+  <!-- TOP NAV BAR -->
+  <div class="navbar">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center">
+        <strong class="text-white me-3">Scheduler Beta</strong>
+        <a href="/pages/index.html" class="text-white-50 me-3">Home</a>
+        <a href="/pages/schedule.html" class="text-white-50 me-3">Schedule</a>
+        <a href="/pages/business.html" class="text-white-50 me-3">Business</a>
+        <a href="/pages/employees.html" class="text-white-50 me-3">Employees</a>
+        <a href="/pages/stations.html" class="text-white-50 me-3">Stations</a>
+        <a href="/pages/official.html" class="text-white-50 me-3">Official&nbsp;Schedule</a>
+      </div>
+      <div id="localTime" class="text-white-50 small"></div>
     </div>
-    <!-- RIGHT SIDE: Local system time -->
-    <div id="localTime" style="font-size:0.9rem; color:#ffffffcc;"></div>
   </div>
 
-  <div class="container my-4">
-    <h1>Welcome to The Scheduler</h1>
-    <p>Use the navigation above to manage business info, employees, and the schedule.</p>
+  <div class="container-fluid py-4">
+    <div class="welcome-container">
+      <div class="welcome-header">
+        <h1 class="welcome-title">Welcome to The Scheduler</h1>
+        <p class="welcome-subtitle">Your complete workforce management solution</p>
+      </div>
+      
+      <div class="quick-links">
+        <a href="/pages/schedule.html" class="quick-link-card">
+          <i class="bi bi-calendar-week quick-link-icon"></i>
+          <h3 class="quick-link-title">Schedule</h3>
+          <p class="quick-link-desc">Create and manage your employee schedules</p>
+        </a>
+        
+        <a href="/pages/business.html" class="quick-link-card">
+          <i class="bi bi-building quick-link-icon"></i>
+          <h3 class="quick-link-title">Business</h3>
+          <p class="quick-link-desc">Update your business information and hours</p>
+        </a>
+        
+        <a href="/pages/employees.html" class="quick-link-card">
+          <i class="bi bi-people quick-link-icon"></i>
+          <h3 class="quick-link-title">Employees</h3>
+          <p class="quick-link-desc">Manage your employee roster</p>
+        </a>
+        
+        <a href="/pages/stations.html" class="quick-link-card">
+          <i class="bi bi-shop quick-link-icon"></i>
+          <h3 class="quick-link-title">Stations</h3>
+          <p class="quick-link-desc">Set up work stations for scheduling</p>
+        </a>
+        
+        <a href="/pages/official.html" class="quick-link-card">
+          <i class="bi bi-calendar-check quick-link-icon"></i>
+          <h3 class="quick-link-title">Official Schedule</h3>
+          <p class="quick-link-desc">View the published schedule</p>
+        </a>
+      </div>
+      
+      <div class="welcome-footer">
+        <p>Get started by setting up your business information, adding employees and stations, then creating your schedule.</p>
+        <p id="username">Welcome, User!</p>
+      </div>
+    </div>
   </div>
 
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  
+  <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Local time display -->
   <script>
-    function updateLocalTime(){
+    function updateLocalTime() {
       const now = new Date();
-      document.getElementById('localTime').textContent = now.toLocaleString([], {
+      const timeString = now.toLocaleString([], { 
         dateStyle: 'short',
-        timeStyle: 'medium'
+        timeStyle: 'medium' 
       });
+      document.getElementById('localTime').textContent = timeString;
     }
     setInterval(updateLocalTime, 1000);
     updateLocalTime();
+    
+    // Fetch user info if available
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/user', { credentials: 'include' });
+        if (!res.ok) return;
+        
+        const user = await res.json();
+        if (user.name) {
+          document.getElementById('username').textContent = `Welcome, ${user.name}!`;
+        }
+      } catch (err) {
+        console.error('Failed to fetch user:', err);
+      }
+    });
   </script>
 </body>
 </html>
+

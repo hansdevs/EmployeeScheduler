@@ -2,100 +2,238 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Employees</title>
-  <!-- Bootstrap CSS (optional) -->
+  
+  <!-- Bootstrap CSS -->
   <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
   />
-  <!-- Optionally include your own custom CSS for color blocks, etc. -->
-  <link rel="stylesheet" href="schedule.css" />
-  <style>
-    /* Red remove button styling */
-    .remove-btn {
-      background-color: #dc3545;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      padding: 0.4rem 0.8rem;
-      cursor: pointer;
-    }
-    .remove-btn:hover {
-      background-color: #c82333;
-    }
-  </style>
+  
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/pages/schedule.css" />
 </head>
-<body style="background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, sans-serif;">
+<body>
   <!-- TOP NAV BAR -->
-  <div style="background-color:#0d6efd; color:#fff; padding:0.5rem 1rem; display:flex; justify-content:space-between; align-items:center;">
-    <div>
-      <strong>Scheduler Beta</strong>
-      <!-- Nav links to your other pages -->
-      <a href="/pages/index.html"   style="color:#ffffffcc; margin-left:1rem;">Home</a>
-      <a href="/pages/schedule.html" style="color:#ffffffcc; margin-left:1rem;">Schedule</a>
-      <a href="/pages/business.html" style="color:#ffffffcc; margin-left:1rem;">Business</a>
-      <a href="/pages/employees.html" style="color:#ffffffcc; margin-left:1rem;">Employees</a>
-      <a href="/pages/stations.html" style="color:#ffffffcc; margin-left:1rem;">Stations</a>
-      <a href="/pages/official.html"style="color:#ffffffcc; margin-left:1rem;">Official&nbsp;Schedule</a>
-    </div>
-    <div id="localTime" style="font-size:0.9rem; color:#ffffffcc;"></div>
-  </div>
-
-  <div class="container my-4">
-    <h2>Employees</h2>
-    <button class="btn btn-primary mb-3" onclick="loadEmployees()">Load Employees</button>
-
-    <!-- Table for existing employees -->
-    <table class="table table-striped" id="empTable">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>Type/Role</th>
-          <th>Color Class</th>
-          <th>Actions</th> <!-- Added column for Remove button -->
-        </tr>
-      </thead>
-      <tbody id="empTableBody">
-        <!-- Filled via JS -->
-      </tbody>
-    </table>
-
-    <h4 class="mt-4">Add New Employee</h4>
-    <div class="mt-3">
-      <div class="mb-3">
-        <label class="form-label">Name</label>
-        <input type="text" id="empName" class="form-control" required>
+  <div class="navbar">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center">
+        <strong class="text-white me-3">Scheduler Beta</strong>
+        <a href="/pages/index.html" class="text-white-50 me-3">Home</a>
+        <a href="/pages/schedule.html" class="text-white-50 me-3">Schedule</a>
+        <a href="/pages/business.html" class="text-white-50 me-3">Business</a>
+        <a href="/pages/employees.html" class="text-white me-3">Employees</a>
+        <a href="/pages/stations.html" class="text-white-50 me-3">Stations</a>
+        <a href="/pages/official.html" class="text-white-50 me-3">Official&nbsp;Schedule</a>
       </div>
-      <div class="mb-3">
-        <label class="form-label">Type/Role</label>
-        <input type="text" id="empType" class="form-control" placeholder="Attorney, Cleaning, etc.">
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Color Class</label>
-        <select id="empColor" class="form-select">
-          <option value="block-blue">Blue</option>
-          <option value="block-green">Green</option>
-          <option value="block-purple">Purple</option>
-          <option value="block-orange">Orange</option>
-          <option value="block-red">Red</option>
-          <option value="block-yellow">Yellow</option>
-        </select>
-      </div>
-      <button class="btn btn-success" onclick="addEmployee()">Add Employee</button>
+      <div id="localTime" class="text-white-50 small"></div>
     </div>
   </div>
 
-  <!-- Bootstrap JS (optional) -->
+  <div class="container-fluid py-4">
+    <div id="statusMessage"></div>
+    
+    <div class="employees-container">
+      <div class="employees-header">
+        <h2 class="employees-title">Employees</h2>
+        <div>
+          <button class="btn btn-outline-primary me-2" onclick="loadEmployees()">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+          </button>
+          <button class="btn btn-outline-info" onclick="showTimeclockModal()">
+            <i class="bi bi-clock-history"></i> Time Clock
+          </button>
+        </div>
+      </div>
+      
+      <!-- Table for existing employees -->
+      <div class="table-responsive">
+        <table class="table table-hover" id="empTable">
+          <thead class="table-light">
+            <tr>
+              <th>ID/Code</th>
+              <th>Name</th>
+              <th>Type/Role</th>
+              <th>Color</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="empTableBody">
+            <!-- Filled via JS -->
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Add New Employee Form -->
+      <div class="employee-form">
+        <h3 class="form-title">Add New Employee</h3>
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="empName">Name</label>
+            <input type="text" id="empName" class="form-control" placeholder="Employee name" required>
+          </div>
+          
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="empType">Type/Role</label>
+            <input type="text" id="empType" class="form-control" placeholder="Attorney, Cleaning, etc.">
+          </div>
+          
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="empId">ID/Punch Code</label>
+            <input type="text" id="empId" class="form-control" placeholder="Custom ID or leave blank">
+            <small class="text-muted">Used for time clock punch in/out</small>
+          </div>
+          
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="empColor">Color</label>
+            <select id="empColor" class="form-select">
+              <option value="block-blue">Blue</option>
+              <option value="block-green">Green</option>
+              <option value="block-purple">Purple</option>
+              <option value="block-orange">Orange</option>
+              <option value="block-red">Red</option>
+              <option value="block-yellow">Yellow</option>
+            </select>
+          </div>
+        </div>
+        
+        <button class="add-btn" onclick="addEmployee()">
+          <i class="bi bi-plus-circle me-2"></i> Add Employee
+        </button>
+      </div>
+    </div>
+    
+    <!-- Time Clock Integration Section -->
+    <div class="employees-container mt-4">
+      <h3 class="employees-title mb-3">Time Clock Integration</h3>
+      <div class="alert alert-info">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        Employee IDs can be used as punch codes for the time clock system. Each employee can use their ID to clock in and out.
+      </div>
+      
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header bg-primary text-white">
+              <i class="bi bi-clock me-2"></i> Time Clock Setup
+            </div>
+            <div class="card-body">
+              <p>Configure how the time clock system works with your schedule:</p>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="enforceSchedule" checked>
+                <label class="form-check-label" for="enforceSchedule">
+                  Enforce scheduled hours (flag early/late punches)
+                </label>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="allowRemotePunch" checked>
+                <label class="form-check-label" for="allowRemotePunch">
+                  Allow remote punch in/out
+                </label>
+              </div>
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="requirePhoto">
+                <label class="form-check-label" for="requirePhoto">
+                  Require photo verification on punch
+                </label>
+              </div>
+              <button class="btn btn-primary" onclick="saveTimeclockSettings()">
+                <i class="bi bi-save me-2"></i> Save Settings
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header bg-success text-white">
+              <i class="bi bi-link-45deg me-2"></i> API Endpoints
+            </div>
+            <div class="card-body">
+              <p>Use these endpoints to integrate with external time clock systems:</p>
+              <ul class="list-group">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <code>/api/timeclock/punch</code>
+                  <span class="badge bg-primary">POST</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <code>/api/timeclock/status/:employee_id</code>
+                  <span class="badge bg-success">GET</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <code>/api/timeclock/report</code>
+                  <span class="badge bg-success">GET</span>
+                </li>
+              </ul>
+              <div class="mt-3">
+                <a href="#" class="btn btn-outline-secondary" onclick="showApiDocs()">
+                  <i class="bi bi-file-earmark-text me-2"></i> View API Documentation
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Time Clock Modal -->
+  <div class="modal fade" id="timeclockModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title"><i class="bi bi-clock me-2"></i> Time Clock Terminal</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="text-center mb-4">
+            <h3>Employee Punch In/Out</h3>
+            <p class="text-muted">Enter your employee ID to clock in or out</p>
+          </div>
+          
+          <div class="row justify-content-center">
+            <div class="col-md-6">
+              <div class="input-group mb-3">
+                <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+                <input type="text" id="punchIdInput" class="form-control form-control-lg" placeholder="Enter ID/Code">
+                <button class="btn btn-primary" type="button" onclick="processPunch()">Submit</button>
+              </div>
+              
+              <div id="punchStatus" class="alert alert-info d-none">
+                <!-- Status will appear here -->
+              </div>
+              
+              <div class="text-center mt-4">
+                <div id="currentTime" class="display-6 mb-2">00:00:00</div>
+                <div id="currentDate" class="text-muted">Loading date...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  
+  <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Optional JS snippet to show local system time, updated every second -->
+  <!-- Local time display -->
   <script>
     function updateLocalTime() {
       const now = new Date();
-      const timeString = now.toLocaleString([], {
+      const timeString = now.toLocaleString([], { 
         dateStyle: 'short',
-        timeStyle: 'medium'
+        timeStyle: 'medium' 
       });
       document.getElementById('localTime').textContent = timeString;
     }
@@ -103,111 +241,8 @@
     updateLocalTime();
   </script>
 
-  <!-- Main Employees Logic -->
-  <script>
-    async function loadEmployees() {
-      try {
-        const res = await fetch('/api/employees');
-        if (!res.ok) {
-          throw new Error('Failed to load employees');
-        }
-        const data = await res.json();
-        renderEmployees(data);
-      } catch (err) {
-        console.error(err);
-        alert('Error loading employees');
-      }
-    }
-
-    function renderEmployees(employees) {
-      const tbody = document.getElementById('empTableBody');
-      tbody.innerHTML = '';
-
-      if (!employees || employees.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5">No employees found.</td></tr>';
-        return;
-      }
-
-      employees.forEach(emp => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${emp.id}</td>
-          <td>${emp.name}</td>
-          <td>${emp.type || ''}</td>
-          <td>${emp.color || ''}</td>
-          <td><button class="remove-btn" onclick="removeEmployee(${emp.id})">Remove</button></td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function addEmployee() {
-      const nameInput  = document.getElementById('empName');
-      const typeInput  = document.getElementById('empType');
-      const colorInput = document.getElementById('empColor');
-
-      const newName  = nameInput.value.trim();
-      const newType  = typeInput.value.trim();
-      const newColor = colorInput.value;
-
-      if (!newName) {
-        alert('Name is required!');
-        return;
-      }
-
-      try {
-        const res = await fetch('/api/employees', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: newName,
-            type: newType,
-            color: newColor
-          })
-        });
-        if (!res.ok) {
-          throw new Error('Failed to add employee');
-        }
-        const data = await res.json();
-        console.log('Employee added:', data);
-
-        // Clear input fields
-        nameInput.value  = '';
-        typeInput.value  = '';
-        colorInput.value = 'block-blue';
-
-        // Reload or re-fetch the employees list
-        loadEmployees();
-      } catch (err) {
-        console.error(err);
-        alert('Error adding employee');
-      }
-    }
-
-    async function removeEmployee(id) {
-      // Basic confirmation
-      if (!confirm('Are you sure you want to remove this employee?')) {
-        return;
-      }
-      try {
-        const res = await fetch('/api/employees/' + id, {
-          method: 'DELETE'
-        });
-        if (!res.ok) {
-          throw new Error('Failed to remove employee');
-        }
-        console.log(`Employee ${id} removed`);
-        loadEmployees();
-      } catch (err) {
-        console.error(err);
-        alert('Error removing employee');
-      }
-    }
-
-    // Optionally auto-load employees when the page loads
-    document.addEventListener('DOMContentLoaded', () => {
-      loadEmployees();
-    });
-  </script>
+  <!-- Employee Management JS -->
+  <script src="/js/employee-management.js"></script>
 </body>
 </html>
+

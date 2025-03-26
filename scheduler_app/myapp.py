@@ -68,6 +68,11 @@ def serve_pages(filename):
 def serve_css(filename):
     return send_from_directory(app.static_folder + "/pages", f"{filename}.css", mimetype='text/css')
 
+# Add this route to handle JS files
+@app.route("/js/<path:filename>")
+def serve_js(filename):
+    return send_from_directory(app.static_folder + "/js", filename, mimetype='application/javascript')
+
 # -------------------------
 # Sign Up (fake) route
 # -------------------------
@@ -146,19 +151,24 @@ def update_business():
 
     BUSINESS_INFO["name"] = data.get("name", BUSINESS_INFO["name"])
     BUSINESS_INFO["industry"] = data.get("industry", BUSINESS_INFO["industry"])
-    reqs = data.get("requirements", BUSINESS_INFO["requirements"])
-
-    if isinstance(reqs, str):
-        reqs = [r.strip() for r in reqs.split(",") if r.strip()]
-    BUSINESS_INFO["requirements"] = reqs
-
+    
+    # Handle requirements if they exist in the data
+    if "requirements" in data:
+        reqs = data.get("requirements")
+        if isinstance(reqs, str):
+            reqs = [r.strip() for r in reqs.split(",") if r.strip()]
+        BUSINESS_INFO["requirements"] = reqs
+    
     hours = data.get("hours", {})
     for d in range(7):
-        if str(d) in hours:
-            open_h  = hours[str(d)].get("open", BUSINESS_INFO["hours"][d]["open"])
-            close_h = hours[str(d)].get("close", BUSINESS_INFO["hours"][d]["close"])
-            BUSINESS_INFO["hours"][d]["open"]  = open_h
-            BUSINESS_INFO["hours"][d]["close"] = close_h
+        day_key = str(d) if isinstance(hours, dict) and str(d) in hours else d
+        if day_key in hours:
+            day_hours = hours[day_key]
+            if d not in BUSINESS_INFO["hours"]:
+                BUSINESS_INFO["hours"][d] = {"open": 0, "close": 0}
+            
+            BUSINESS_INFO["hours"][d]["open"] = day_hours.get("open", BUSINESS_INFO["hours"][d]["open"])
+            BUSINESS_INFO["hours"][d]["close"] = day_hours.get("close", BUSINESS_INFO["hours"][d]["close"])
 
     return jsonify({"status": "ok", "business": BUSINESS_INFO})
 
@@ -180,6 +190,13 @@ def add_employee():
     new_name  = data.get("name", "").strip()
     new_type  = data.get("type", "").strip()
     new_color = data.get("color", "block-blue").strip()
+    custom_id = data.get("custom_id")
+    
+    if custom_id:
+        custom_id = str(custom_id).strip()
+        # Check if custom_id is already in use
+        if any(e.get("custom_id") == custom_id for e in EMPLOYEES):
+            return jsonify({"error": "This ID/Punch Code is already in use"}), 400
 
     if not new_name:
         return jsonify({"error": "Employee name required"}), 400
@@ -191,10 +208,47 @@ def add_employee():
         "type": new_type,
         "color": new_color
     }
+    
+    if custom_id:
+        new_employee["custom_id"] = custom_id
+        
     EMPLOYEES.append(new_employee)
     return jsonify({"status": "ok", "employee": new_employee})
 
-# NEW DELETE ENDPOINT
+# UPDATE EMPLOYEE ENDPOINT
+@app.route("/api/employees/<int:employee_id>", methods=["PUT"])
+def update_employee(employee_id):
+    global EMPLOYEES
+    data = request.json
+    if not data:
+        return jsonify({"error": "No JSON body provided"}), 400
+        
+    employee = next((e for e in EMPLOYEES if e["id"] == employee_id), None)
+    if not employee:
+        return jsonify({"error": "Employee not found"}), 404
+    
+    # Check if custom_id is being updated and is not already in use by another employee
+    if "custom_id" in data:
+        custom_id = data["custom_id"]
+        if custom_id:
+            custom_id = str(custom_id).strip()
+            # Check if custom_id is already in use by another employee
+            if any(e.get("custom_id") == custom_id and e["id"] != employee_id for e in EMPLOYEES):
+                return jsonify({"error": "This ID/Punch Code is already in use"}), 400
+        employee["custom_id"] = custom_id
+    
+    if "name" in data and data["name"].strip():
+        employee["name"] = data["name"].strip()
+        
+    if "type" in data:
+        employee["type"] = data["type"].strip()
+        
+    if "color" in data and data["color"].strip():
+        employee["color"] = data["color"].strip()
+        
+    return jsonify({"status": "ok", "employee": employee})
+
+# DELETE EMPLOYEE ENDPOINT
 @app.route("/api/employees/<int:employee_id>", methods=["DELETE"])
 def delete_employee(employee_id):
     global EMPLOYEES
@@ -281,6 +335,137 @@ def official_schedule():
         "employees": EMPLOYEES,
         "stations": STATIONS,
         "is_published": SCHEDULE_PUBLISHED
+    })
+
+# -------------------------
+# TIME CLOCK API
+# -------------------------
+# Placeholder for time clock data
+TIME_CLOCK_DATA = {
+    "settings": {
+        "enforce_schedule": True,
+        "allow_remote_punch": True,
+        "require_photo": False
+    },
+    "punches": []  # Will store punch records
+}
+
+@app.route("/api/timeclock/settings", methods=["GET"])
+def get_timeclock_settings():
+    return jsonify(TIME_CLOCK_DATA["settings"])
+
+@app.route("/api/timeclock/settings", methods=["POST"])
+def update_timeclock_settings():
+    data = request.json
+    if not data:
+        return jsonify({"error": "No JSON body provided"}), 400
+        
+    TIME_CLOCK_DATA["settings"]["enforce_schedule"] = data.get("enforce_schedule", 
+                                                      TIME_CLOCK_DATA["settings"]["enforce_schedule"])
+    TIME_CLOCK_DATA["settings"]["allow_remote_punch"] = data.get("allow_remote_punch", 
+                                                        TIME_CLOCK_DATA["settings"]["allow_remote_punch"])
+    TIME_CLOCK_DATA["settings"]["require_photo"] = data.get("require_photo", 
+                                                   TIME_CLOCK_DATA["settings"]["require_photo"])
+    
+    return jsonify({"status": "ok", "settings": TIME_CLOCK_DATA["settings"]})
+
+@app.route("/api/timeclock/punch", methods=["POST"])
+def record_punch():
+    data = request.json
+    if not data:
+        return jsonify({"error": "No JSON body provided"}), 400
+        
+    employee_id = data.get("employee_id")
+    if not employee_id:
+        return jsonify({"error": "Employee ID required"}), 400
+        
+    # Find employee by ID or custom_id
+    employee = None
+    for emp in EMPLOYEES:
+        if str(emp["id"]) == str(employee_id) or str(emp.get("custom_id", "")) == str(employee_id):
+            employee = emp
+            break
+            
+    if not employee:
+        return jsonify({"error": "Employee not found"}), 404
+        
+    punch_type = data.get("type", "in")  # "in" or "out"
+    timestamp = data.get("timestamp", None)  # Client can provide timestamp or we use server time
+    
+    # Create punch record
+    punch = {
+        "employee_id": employee["id"],
+        "type": punch_type,
+        "timestamp": timestamp,
+        "verified": not TIME_CLOCK_DATA["settings"]["require_photo"]  # Auto-verify if photos not required
+    }
+    
+    TIME_CLOCK_DATA["punches"].append(punch)
+    
+    return jsonify({
+        "status": "ok", 
+        "punch": punch,
+        "employee": employee
+    })
+
+@app.route("/api/timeclock/status/<employee_id>", methods=["GET"])
+def get_employee_status(employee_id):
+    # Find employee by ID or custom_id
+    employee = None
+    for emp in EMPLOYEES:
+        if str(emp["id"]) == str(employee_id) or str(emp.get("custom_id", "")) == str(employee_id):
+            employee = emp
+            break
+            
+    if not employee:
+        return jsonify({"error": "Employee not found"}), 404
+        
+    # Get the most recent punch for this employee
+    employee_punches = [p for p in TIME_CLOCK_DATA["punches"] if p["employee_id"] == employee["id"]]
+    employee_punches.sort(key=lambda x: x["timestamp"], reverse=True)
+    
+    current_status = "out"
+    last_punch = None
+    
+    if employee_punches:
+        last_punch = employee_punches[0]
+        current_status = last_punch["type"]
+        
+    return jsonify({
+        "employee": employee,
+        "status": current_status,
+        "last_punch": last_punch
+    })
+
+@app.route("/api/timeclock/report", methods=["GET"])
+def get_timeclock_report():
+    # Optional filter parameters
+    employee_id = request.args.get("employee_id")
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    
+    # Filter punches based on parameters
+    filtered_punches = TIME_CLOCK_DATA["punches"]
+    
+    if employee_id:
+        filtered_punches = [p for p in filtered_punches if str(p["employee_id"]) == str(employee_id)]
+        
+    # Additional filtering by date would be implemented here
+    
+    # Group punches by employee
+    report = {}
+    for punch in filtered_punches:
+        emp_id = punch["employee_id"]
+        if emp_id not in report:
+            employee = next((e for e in EMPLOYEES if e["id"] == emp_id), None)
+            report[emp_id] = {
+                "employee": employee,
+                "punches": []
+            }
+        report[emp_id]["punches"].append(punch)
+    
+    return jsonify({
+        "report": list(report.values())
     })
 
 # -------------------------

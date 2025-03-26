@@ -2,71 +2,89 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Business Information</title>
-  <!-- Bootstrap CSS (optional) -->
+  
+  <!-- Bootstrap CSS -->
   <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
   />
-  <!-- Optionally include your own CSS -->
-  <link rel="stylesheet" href="schedule.css" />
+  
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/pages/schedule.css" />
 </head>
-<body style="background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, sans-serif;">
+<body>
   <!-- TOP NAV BAR -->
-  <div style="background-color:#0d6efd; color:#fff; padding:0.5rem 1rem; display:flex; justify-content:space-between; align-items:center;">
-    <div>
-      <strong>Scheduler Beta</strong>
-      <!-- Nav links to your other pages -->
-      <a href="/pages/index.html"   style="color:#ffffffcc; margin-left:1rem;">Home</a>
-      <a href="/pages/schedule.html" style="color:#ffffffcc; margin-left:1rem;">Schedule</a>
-      <a href="/pages/business.html" style="color:#ffffffcc; margin-left:1rem;">Business</a>
-      <a href="/pages/employees.html" style="color:#ffffffcc; margin-left:1rem;">Employees</a>
-      <a href="/pages/stations.html" style="color:#ffffffcc; margin-left:1rem;">Stations</a>
-      <a href="/pages/official.html"style="color:#ffffffcc; margin-left:1rem;">Official&nbsp;Schedule</a>
+  <div class="navbar">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center">
+        <strong class="text-white me-3">Scheduler Beta</strong>
+        <a href="/pages/index.html" class="text-white-50 me-3">Home</a>
+        <a href="/pages/schedule.html" class="text-white-50 me-3">Schedule</a>
+        <a href="/pages/business.html" class="text-white me-3">Business</a>
+        <a href="/pages/employees.html" class="text-white-50 me-3">Employees</a>
+        <a href="/pages/stations.html" class="text-white-50 me-3">Stations</a>
+        <a href="/pages/official.html" class="text-white-50 me-3">Official&nbsp;Schedule</a>
+      </div>
+      <div id="localTime" class="text-white-50 small"></div>
     </div>
-    <div id="localTime" style="font-size:0.9rem; color:#ffffffcc;"></div>
   </div>
 
-  <div class="container my-4">
-    <h2>Business Information</h2>
-
-    <!-- Button to load current business data (or we can do auto-load on DOMContentLoaded) -->
-    <button class="btn btn-primary mb-3" onclick="fetchBusinessInfo()">Load Business Info</button>
-
-    <!-- Business Form -->
-    <form id="businessForm" class="mt-3" onsubmit="event.preventDefault(); saveBusinessInfo();">
-      <div class="mb-3">
-        <label class="form-label">Business Name</label>
-        <input type="text" id="bizName" class="form-control">
+  <div class="container-fluid py-4">
+    <div id="statusMessage"></div>
+    
+    <div class="business-container">
+      <div class="business-header">
+        <h2 class="business-title">Business Information</h2>
+        <button class="btn btn-outline-primary" onclick="fetchBusinessInfo()">
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
       </div>
-      <div class="mb-3">
-        <label class="form-label">Industry</label>
-        <input type="text" id="bizIndustry" class="form-control">
-      </div>
-
-<!-- 
-      <div class="mb-3">
-        <label class="form-label">Requirements (comma-separated)</label>
-        <input type="text" id="bizRequirements" class="form-control">
-      </div>  -->
-
-      <!-- Operating Hours for each day -->
-      <h5 class="mt-4">Operating Hours</h5>
-      <p class="text-muted">Set open & close hour (0..24) for each day (0=Mon, 1=Tue, etc.)</p>
-      <div class="row" id="bizHoursContainer">
-        <!-- We'll fill this with JS for days 0..6 -->
-      </div>
-
-      <button type="submit" class="btn btn-primary">Save</button>
-    </form>
+      
+      <form id="businessForm" onsubmit="event.preventDefault(); saveBusinessInfo();">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label" for="bizName">Business Name</label>
+            <input type="text" id="bizName" class="form-control" placeholder="Enter business name">
+          </div>
+          
+          <div class="col-md-6 mb-3">
+            <label class="form-label" for="bizIndustry">Industry</label>
+            <input type="text" id="bizIndustry" class="form-control" placeholder="e.g. Retail, Healthcare, etc.">
+          </div>
+        </div>
+        
+        <div class="hours-container">
+          <h3 class="hours-title">Operating Hours</h3>
+          <p class="text-muted mb-3">Set open & close hours (0-24) for each day of the week</p>
+          
+          <div class="row" id="bizHoursContainer">
+            <!-- Filled by JavaScript -->
+          </div>
+        </div>
+        
+        <button type="submit" class="save-btn">
+          <i class="bi bi-save me-2"></i> Save Business Information
+        </button>
+        
+        <div id="saveStatus" class="status-message"></div>
+      </form>
+    </div>
   </div>
 
-  <!-- Bootstrap JS (optional) -->
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  
+  <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Optional local time display -->
+  <!-- Local time display -->
   <script>
-    function updateLocalTime(){
+    function updateLocalTime() {
       const now = new Date();
       const timeString = now.toLocaleString([], { 
         dateStyle: 'short',
@@ -85,15 +103,22 @@
 
     async function fetchBusinessInfo() {
       try {
+        document.getElementById('statusMessage').innerHTML = 
+          '<div class="alert alert-info"><i class="bi bi-info-circle-fill me-2"></i>Loading business information...</div>';
+        
         const res = await fetch('/api/business');
         if (!res.ok) {
           throw new Error('Failed to load business info');
         }
+        
         businessData = await res.json();
         renderBusinessForm(businessData);
+        
+        document.getElementById('statusMessage').innerHTML = '';
       } catch (err) {
         console.error(err);
-        alert('Error loading business info');
+        document.getElementById('statusMessage').innerHTML = 
+          `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>${err.message}</div>`;
       }
     }
 
@@ -102,18 +127,10 @@
       document.getElementById('bizName').value = biz.name || '';
       document.getElementById('bizIndustry').value = biz.industry || '';
 
-      // Phase2 Feature
-     /* if (Array.isArray(biz.requirements)) {
-        document.getElementById('bizRequirements').value = biz.requirements.join(', ');
-      } else {
-        document.getElementById('bizRequirements').value = '';
-      }*/
-
-
       // Operating hours
       const hoursContainer = document.getElementById('bizHoursContainer');
       hoursContainer.innerHTML = '';
-      const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
       // biz.hours is something like {0:{open:8,close:17},1:{open:8,close:17},...}
       for(let d=0; d<7; d++){
@@ -123,13 +140,14 @@
 
         // Build a small chunk of HTML for each day
         const col = document.createElement('div');
-        col.className = 'col-md-4 mb-2';
+        col.className = 'col-md-6 col-lg-4 mb-3';
         col.innerHTML = `
-          <label class="form-label">Day ${d} (${dayNames[d]})</label>
+          <label class="form-label">${dayNames[d]}</label>
           <div class="input-group">
-            <input type="number" class="form-control" placeholder="Open" id="open_${d}" value="${openVal}" />
-            <span class="input-group-text">-</span>
-            <input type="number" class="form-control" placeholder="Close" id="close_${d}" value="${closeVal}" />
+            <span class="input-group-text"><i class="bi bi-clock"></i></span>
+            <input type="number" min="0" max="24" class="form-control" placeholder="Open" id="open_${d}" value="${openVal}" />
+            <span class="input-group-text">to</span>
+            <input type="number" min="0" max="24" class="form-control" placeholder="Close" id="close_${d}" value="${closeVal}" />
           </div>
         `;
         hoursContainer.appendChild(col);
@@ -137,49 +155,77 @@
     }
 
     async function saveBusinessInfo() {
-      // Gather updated values from the form
-      const name = document.getElementById('bizName').value.trim() || 'Unnamed Biz';
-      const industry = document.getElementById('bizIndustry').value.trim() || '';
-      const reqs = document.getElementById('bizRequirements').value.trim() || '';
-
-      // Build the hours object
-      let hoursObj = {};
-      for (let d=0; d<7; d++){
-        const openVal = parseInt(document.getElementById(`open_${d}`).value, 10) || 0;
-        const closeVal= parseInt(document.getElementById(`close_${d}`).value, 10) || 0;
-        hoursObj[d] = { open: openVal, close: closeVal };
-      }
-
-      // Prepare the POST data
-      const payload = {
-        name,
-        industry,
-        requirements: reqs,  // can be comma-separated, server will handle splitting or we can do it here
-        hours: hoursObj
-      };
-
       try {
+        // Reset status messages
+        document.getElementById('saveStatus').className = 'status-message';
+        document.getElementById('saveStatus').textContent = '';
+        
+        // Gather updated values from the form
+        const name = document.getElementById('bizName').value.trim() || 'Unnamed Business';
+        const industry = document.getElementById('bizIndustry').value.trim() || '';
+
+        // Build the hours object
+        let hoursObj = {};
+        for (let d=0; d<7; d++){
+          const openVal = parseInt(document.getElementById(`open_${d}`).value, 10) || 0;
+          const closeVal= parseInt(document.getElementById(`close_${d}`).value, 10) || 0;
+          hoursObj[d] = { open: openVal, close: closeVal };
+        }
+
+        // Prepare the POST data
+        const payload = {
+          name,
+          industry,
+          hours: hoursObj
+        };
+
+        document.getElementById('statusMessage').innerHTML = 
+          '<div class="alert alert-info"><i class="bi bi-info-circle-fill me-2"></i>Saving business information...</div>';
+        
         const res = await fetch('/api/business', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+        
         if(!res.ok) {
           throw new Error('Failed to save business info');
         }
+        
         const data = await res.json();
         console.log(data);
-        alert('Business info saved successfully!');
+        
+        document.getElementById('statusMessage').innerHTML = 
+          '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Business information saved successfully!</div>';
+        
+        document.getElementById('saveStatus').className = 'status-message success';
+        document.getElementById('saveStatus').innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Saved successfully!';
+        
+        // Fade out the message after 3 seconds
+        setTimeout(() => {
+          const msgDiv = document.getElementById('statusMessage');
+          msgDiv.style.transition = 'opacity 1s';
+          msgDiv.style.opacity = '0';
+          setTimeout(() => {
+            msgDiv.innerHTML = '';
+            msgDiv.style.opacity = '1';
+          }, 1000);
+        }, 3000);
       } catch (err) {
         console.error(err);
-        alert('Error saving business info');
+        document.getElementById('statusMessage').innerHTML = 
+          `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>${err.message}</div>`;
+        
+        document.getElementById('saveStatus').className = 'status-message error';
+        document.getElementById('saveStatus').innerHTML = '<i class="bi bi-exclamation-triangle-fill me-2"></i>Failed to save';
       }
     }
 
-    // Optionally auto-load the business info on page load
+    // Auto-load the business info on page load
     document.addEventListener('DOMContentLoaded', () => {
       fetchBusinessInfo();
     });
   </script>
 </body>
 </html>
+

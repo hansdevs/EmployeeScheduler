@@ -2,52 +2,70 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Official Schedule</title>
-
-  <!-- Bootstrap CSS (optional) -->
+  
+  <!-- Bootstrap CSS -->
   <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
   />
-  <link rel="stylesheet" href="schedule.css" />
+  
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/pages/schedule.css" />
 </head>
-<body style="background-color:#f8f9fa; font-family:'Segoe UI', Tahoma, sans-serif;">
-  <!-- TOP NAV BAR (similar styling as your other pages) -->
-  <div style="background-color:#0d6efd; color:#fff; padding:0.5rem 1rem; display:flex; justify-content:space-between; align-items:center;">
-    <div>
-      <strong>Scheduler Beta</strong>
-      <!-- Link back to your other pages as needed -->
-      <a href="/pages/index.html"   style="color:#ffffffcc; margin-left:1rem;">Home</a>
-      <a href="/pages/schedule.html" style="color:#ffffffcc; margin-left:1rem;">Schedule</a>
-      <a href="/pages/business.html" style="color:#ffffffcc; margin-left:1rem;">Business</a>
-      <a href="/pages/employees.html" style="color:#ffffffcc; margin-left:1rem;">Employees</a>
-      <a href="/pages/stations.html" style="color:#ffffffcc; margin-left:1rem;">Stations</a>
-      <a href="/pages/official.html"style="color:#ffffffcc; margin-left:1rem;">Official&nbsp;Schedule</a>
+<body>
+  <!-- TOP NAV BAR -->
+  <div class="navbar">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center">
+        <strong class="text-white me-3">Scheduler Beta</strong>
+        <a href="/pages/index.html" class="text-white-50 me-3">Home</a>
+        <a href="/pages/schedule.html" class="text-white-50 me-3">Schedule</a>
+        <a href="/pages/business.html" class="text-white-50 me-3">Business</a>
+        <a href="/pages/employees.html" class="text-white-50 me-3">Employees</a>
+        <a href="/pages/stations.html" class="text-white-50 me-3">Stations</a>
+        <a href="/pages/official.html" class="text-white me-3">Official&nbsp;Schedule</a>
+      </div>
+      <div id="localTime" class="text-white-50 small"></div>
     </div>
-    <div id="localTime" style="font-size:0.9rem; color:#ffffffcc;"></div>
   </div>
 
-  <div class="container my-4">
-    <h2>Official Schedule</h2>
-    <div id="scheduleWarning" class="alert alert-warning d-none">
-      This schedule is not yet published!
+  <div class="container-fluid py-4">
+    <div id="statusMessage"></div>
+    
+    <div class="official-container">
+      <div class="official-header">
+        <h2 class="official-title">Official Schedule</h2>
+        <button class="btn btn-outline-primary" onclick="loadOfficialSchedule()">
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+      </div>
+      
+      <!-- Business info at top -->
+      <div id="businessInfo" class="business-info d-none">
+        <!-- Filled by JS -->
+      </div>
+      
+      <!-- The official schedule will be rendered here -->
+      <div id="officialSchedule">
+        <!-- Filled by JS -->
+      </div>
     </div>
-
-    <!-- Business info at top -->
-    <div class="mb-3" id="businessInfo"></div>
-
-    <!-- The official schedule will be rendered here -->
-    <div id="officialSchedule"></div>
   </div>
 
-  <!-- jQuery (optional -->
+  <!-- jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <!-- Bootstrap JS (optional) -->
+  
+  <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Show local system time -->
+  <!-- Local time display -->
   <script>
-    function updateLocalTime(){
+    function updateLocalTime() {
       const now = new Date();
       const timeString = now.toLocaleString([], { 
         dateStyle: 'short',
@@ -59,8 +77,9 @@
     updateLocalTime();
   </script>
 
+  <!-- Main Schedule Logic -->
   <script>
-    const dayNames = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
     document.addEventListener('DOMContentLoaded', () => {
       loadOfficialSchedule();
@@ -68,6 +87,9 @@
 
     async function loadOfficialSchedule() {
       try {
+        document.getElementById('statusMessage').innerHTML = 
+          '<div class="alert alert-info"><i class="bi bi-info-circle-fill me-2"></i>Loading official schedule...</div>';
+        
         // Attempt to fetch official schedule from your /api/official_schedule endpoint
         const res = await fetch('/api/official_schedule');
         if(!res.ok) {
@@ -85,7 +107,10 @@
           return;
         }
 
-        // Otherwise, show the official schedule
+        // Clear status message
+        document.getElementById('statusMessage').innerHTML = '';
+        
+        // Show the official schedule
         renderBusinessInfo(data.business);
         renderOfficialSchedule(data.schedule, data.employees, data.stations);
 
@@ -96,17 +121,28 @@
     }
 
     function handleNotPublished(msg) {
-      document.getElementById('scheduleWarning').classList.remove('d-none');
-      document.getElementById('scheduleWarning').textContent = msg || "This schedule is not yet published!";
+      document.getElementById('statusMessage').innerHTML = 
+        `<div class="alert alert-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>${msg || "This schedule is not yet published!"}</div>`;
+      
+      document.getElementById('officialSchedule').innerHTML = `
+        <div class="empty-state">
+          <i class="bi bi-calendar-x"></i>
+          <h4>No Published Schedule</h4>
+          <p>The schedule has not been published yet. Please check back later.</p>
+        </div>
+      `;
     }
 
     function renderBusinessInfo(biz) {
       if(!biz) return;
+      
       const div = document.getElementById('businessInfo');
+      div.classList.remove('d-none');
       div.innerHTML = `
-        <h5>${biz.name || 'Unnamed Business'}</h5>
-        <p class="mb-1">Industry: ${biz.industry || ''}</p>
-        <p class="mb-1">Requirements: ${Array.isArray(biz.requirements) ? biz.requirements.join(', ') : ''}</p>
+        <h3>${biz.name || 'Unnamed Business'}</h3>
+        ${biz.industry ? `<p><strong>Industry:</strong> ${biz.industry}</p>` : ''}
+        ${Array.isArray(biz.requirements) && biz.requirements.length > 0 ? 
+          `<p><strong>Requirements:</strong> ${biz.requirements.join(', ')}</p>` : ''}
       `;
     }
 
@@ -114,20 +150,38 @@
       // Build day-by-day listing for days 0-6
       const container = document.getElementById('officialSchedule');
       container.innerHTML = ''; // clear
+      
+      if (!schedule || schedule.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="bi bi-calendar"></i>
+            <h4>No Shifts Scheduled</h4>
+            <p>There are no shifts in the published schedule.</p>
+          </div>
+        `;
+        return;
+      }
 
       for(let d=0; d<7; d++){
+        // create a section for the day
+        const daySection = document.createElement('div');
+        daySection.className = 'day-section';
+        
         // create a heading for the day
-        const dayHeader = document.createElement('h4');
-        dayHeader.textContent = `Day ${d} (${dayNames[d]})`;
-        container.appendChild(dayHeader);
+        const dayHeader = document.createElement('h3');
+        dayHeader.className = 'day-title';
+        dayHeader.innerHTML = `<i class="bi bi-calendar-date me-2"></i>${dayNames[d]}`;
+        daySection.appendChild(dayHeader);
 
         // find shifts for day d
         const dayShifts = schedule.filter(sh => sh.day === d);
         if(dayShifts.length === 0) {
           // No shifts for this day
           const p = document.createElement('p');
-          p.textContent = `No shifts for Day ${d}.`;
-          container.appendChild(p);
+          p.className = 'no-shifts';
+          p.innerHTML = `<i class="bi bi-calendar-x me-2"></i>No shifts scheduled for ${dayNames[d]}.`;
+          daySection.appendChild(p);
+          container.appendChild(daySection);
           continue;
         }
 
@@ -135,38 +189,52 @@
         stations.forEach(st => {
           // find shifts for this station
           const stShifts = dayShifts.filter(sh => sh.station_id === st.id);
-          // create a sub-heading for station
-          const stationHeader = document.createElement('h5');
-          stationHeader.textContent = `${st.name} (Station #${st.id})`;
-          container.appendChild(stationHeader);
-
+          
           if(stShifts.length === 0) {
-            // no shifts for this station
-            const p = document.createElement('p');
-            p.classList.add('text-muted', 'ms-4');
-            p.textContent = "No shifts for this station";
-            container.appendChild(p);
-          } else {
-            // show them in a list
-            const ul = document.createElement('ul');
-            ul.classList.add('list-group','mb-2');
-            stShifts.forEach(sh => {
-              // find employee
-              const emp = employees.find(e => e.id === sh.employee_id);
-              const li = document.createElement('li');
-              li.classList.add('list-group-item');
-              // format time
-              const startStr = String(sh.start).padStart(2,'0') + ":00";
-              const endStr   = String(sh.end).padStart(2,'0') + ":00";
-              let empName = emp ? emp.name : `Employee #${sh.employee_id}`;
-              li.innerHTML = `<strong>${empName}</strong> from ${startStr} to ${endStr}`;
-              ul.appendChild(li);
-            });
-            container.appendChild(ul);
+            return; // Skip stations with no shifts
           }
+          
+          // create a sub-heading for station
+          const stationHeader = document.createElement('h4');
+          stationHeader.className = 'station-title';
+          stationHeader.innerHTML = `<i class="bi bi-building me-2"></i>${st.name}`;
+          daySection.appendChild(stationHeader);
+
+          // Create a container for the shifts
+          const shiftsContainer = document.createElement('div');
+          shiftsContainer.className = 'shifts-container';
+          
+          // Add each shift as a card
+          stShifts.forEach(sh => {
+            // find employee
+            const emp = employees.find(e => e.id === sh.employee_id);
+            
+            // Create shift card
+            const shiftCard = document.createElement('div');
+            shiftCard.className = `shift-card ${emp?.color || 'block-blue'}`;
+            
+            // Format time
+            const startStr = String(sh.start).padStart(2,'0') + ":00";
+            const endStr = String(sh.end).padStart(2,'0') + ":00";
+            
+            let empName = emp ? emp.name : `Employee #${sh.employee_id}`;
+            let empRole = emp && emp.type ? `<span class="badge bg-secondary">${emp.type}</span>` : '';
+            
+            shiftCard.innerHTML = `
+              <div class="shift-employee">${empName} ${empRole}</div>
+              <div class="shift-time"><i class="bi bi-clock me-1"></i>${startStr} to ${endStr}</div>
+            `;
+            
+            shiftsContainer.appendChild(shiftCard);
+          });
+          
+          daySection.appendChild(shiftsContainer);
         });
+        
+        container.appendChild(daySection);
       }
     }
   </script>
 </body>
 </html>
+

@@ -2,66 +2,96 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stations</title>
-
-  <!-- Bootstrap CSS (optional) -->
+  
+  <!-- Bootstrap CSS -->
   <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
   />
+  
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/pages/schedule.css" />
 </head>
-<body style="background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, sans-serif;">
-  <!-- TOP NAV BAR (optional, if you want a consistent header) -->
-  <div style="background-color:#0d6efd; color:#fff; padding:0.5rem 1rem; display:flex; justify-content:space-between; align-items:center;">
-    <div>
-      <strong>Scheduler Beta</strong>
-      <a href="/pages/index.html"   style="color:#ffffffcc; margin-left:1rem;">Home</a>
-      <a href="/pages/schedule.html" style="color:#ffffffcc; margin-left:1rem;">Schedule</a>
-      <a href="/pages/business.html" style="color:#ffffffcc; margin-left:1rem;">Business</a>
-      <a href="/pages/employees.html" style="color:#ffffffcc; margin-left:1rem;">Employees</a>
-      <a href="/pages/stations.html" style="color:#ffffffcc; margin-left:1rem;">Stations</a>
-      <a href="/pages/official.html" style="color:#ffffffcc; margin-left:1rem;">Official Schedule</a>
+<body>
+  <!-- TOP NAV BAR -->
+  <div class="navbar">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center">
+        <strong class="text-white me-3">Scheduler Beta</strong>
+        <a href="/pages/index.html" class="text-white-50 me-3">Home</a>
+        <a href="/pages/schedule.html" class="text-white-50 me-3">Schedule</a>
+        <a href="/pages/business.html" class="text-white-50 me-3">Business</a>
+        <a href="/pages/employees.html" class="text-white-50 me-3">Employees</a>
+        <a href="/pages/stations.html" class="text-white me-3">Stations</a>
+        <a href="/pages/official.html" class="text-white-50 me-3">Official&nbsp;Schedule</a>
+      </div>
+      <div id="localTime" class="text-white-50 small"></div>
     </div>
-    <div id="localTime" style="font-size:0.9rem; color:#ffffffcc;"></div>
   </div>
 
-  <div class="container my-4">
-    <h2>Stations</h2>
-    <button class="btn btn-primary mb-3" onclick="loadStations()">Load Stations</button>
-
-    <!-- Table to display existing stations -->
-    <table class="table table-striped" id="stationsTable">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Station Name</th>
-          <th>Type</th>
-        </tr>
-      </thead>
-      <tbody id="stationsBody">
-        <!-- Filled by JS -->
-      </tbody>
-    </table>
-
-    <!-- Add station form -->
-    <h4 class="mt-4">Add a Station</h4>
-    <div class="mb-3">
-      <label class="form-label">Station Name</label>
-      <input type="text" id="stationName" class="form-control" required>
+  <div class="container-fluid py-4">
+    <div id="statusMessage"></div>
+    
+    <div class="stations-container">
+      <div class="stations-header">
+        <h2 class="stations-title">Stations</h2>
+        <button class="btn btn-outline-primary" onclick="loadStations()">
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+      </div>
+      
+      <!-- Table for existing stations -->
+      <div class="table-responsive">
+        <table class="table table-hover" id="stationsTable">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Station Name</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody id="stationsBody">
+            <!-- Filled by JS -->
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Add Station Form -->
+      <div class="station-form">
+        <h3 class="form-title">Add New Station</h3>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label" for="stationName">Station Name</label>
+            <input type="text" id="stationName" class="form-control" placeholder="Enter station name" required>
+          </div>
+          
+          <div class="col-md-6 mb-3">
+            <label class="form-label" for="stationType">Type</label>
+            <input type="text" id="stationType" class="form-control" placeholder="e.g. Cash Register, Desk, etc.">
+          </div>
+        </div>
+        
+        <button class="add-btn" onclick="addStation()">
+          <i class="bi bi-plus-circle me-2"></i> Add Station
+        </button>
+      </div>
     </div>
-    <div class="mb-3">
-      <label class="form-label">Type</label>
-      <input type="text" id="stationType" class="form-control" placeholder="e.g. Cash Register, Desk, etc.">
-    </div>
-    <button class="btn btn-success" onclick="addStation()">Add Station</button>
   </div>
 
-  <!-- Bootstrap JS (optional) -->
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  
+  <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Optional JS snippet to show local system time, updated every second -->
+  <!-- Local time display -->
   <script>
-    function updateLocalTime(){
+    function updateLocalTime() {
       const now = new Date();
       const timeString = now.toLocaleString([], { 
         dateStyle: 'short',
@@ -70,22 +100,29 @@
       document.getElementById('localTime').textContent = timeString;
     }
     setInterval(updateLocalTime, 1000);
-    updateLocalTime(); 
+    updateLocalTime();
   </script>
 
   <!-- Main Stations Logic -->
   <script>
     async function loadStations() {
       try {
+        document.getElementById('statusMessage').innerHTML = 
+          '<div class="alert alert-info"><i class="bi bi-info-circle-fill me-2"></i>Loading stations...</div>';
+        
         const response = await fetch('/api/stations');
         if(!response.ok) {
           throw new Error('Failed to load stations');
         }
+        
         const stations = await response.json();
         renderStations(stations);
+        
+        document.getElementById('statusMessage').innerHTML = '';
       } catch (error) {
         console.error(error);
-        alert('Error loading stations');
+        document.getElementById('statusMessage').innerHTML = 
+          `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>${error.message}</div>`;
       }
     }
 
@@ -94,7 +131,17 @@
       tbody.innerHTML = ''; // clear existing rows
 
       if(!stations || stations.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3">No stations yet.</td></tr>`;
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="3">
+              <div class="empty-state">
+                <i class="bi bi-building"></i>
+                <h4>No stations yet</h4>
+                <p>Add your first station using the form below</p>
+              </div>
+            </td>
+          </tr>
+        `;
         return;
       }
 
@@ -103,7 +150,7 @@
         row.innerHTML = `
           <td>${st.id}</td>
           <td>${st.name}</td>
-          <td>${st.type}</td>
+          <td>${st.type ? `<span class="station-badge">${st.type}</span>` : '<span class="text-muted">Not specified</span>'}</td>
         `;
         tbody.appendChild(row);
       });
@@ -114,11 +161,16 @@
       const type = document.getElementById('stationType').value.trim();
 
       if(!name) {
-        alert("Station Name is required");
+        document.getElementById('statusMessage').innerHTML = 
+          '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>Station name is required!</div>';
+        document.getElementById('stationName').focus();
         return;
       }
 
       try {
+        document.getElementById('statusMessage').innerHTML = 
+          '<div class="alert alert-info"><i class="bi bi-info-circle-fill me-2"></i>Adding station...</div>';
+        
         const response = await fetch('/api/stations', {
           method: 'POST',
           headers: {
@@ -129,29 +181,47 @@
             type: type
           })
         });
+        
         if(!response.ok) {
           throw new Error('Failed to add station');
         }
+        
         const data = await response.json();
-        // If the server responds with the newly created station, you can append it or just reload
         console.log('Station added:', data);
 
         // Clear form inputs
         document.getElementById('stationName').value = '';
         document.getElementById('stationType').value = '';
 
-        // Reload or re-fetch the stations
+        // Show success message
+        document.getElementById('statusMessage').innerHTML = 
+          '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Station added successfully!</div>';
+        
+        // Reload the stations
         loadStations();
+        
+        // Fade out the message after 3 seconds
+        setTimeout(() => {
+          const msgDiv = document.getElementById('statusMessage');
+          msgDiv.style.transition = 'opacity 1s';
+          msgDiv.style.opacity = '0';
+          setTimeout(() => {
+            msgDiv.innerHTML = '';
+            msgDiv.style.opacity = '1';
+          }, 1000);
+        }, 3000);
       } catch(error) {
         console.error(error);
-        alert('Error adding station');
+        document.getElementById('statusMessage').innerHTML = 
+          `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>${error.message}</div>`;
       }
     }
 
-    // Optionally, auto-load stations on page load
+    // Auto-load stations on page load
     document.addEventListener('DOMContentLoaded', () => {
       loadStations();
     });
   </script>
 </body>
 </html>
+
