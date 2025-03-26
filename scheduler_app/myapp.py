@@ -63,6 +63,10 @@ def serve_pages(filename):
 
     return send_from_directory(app.static_folder + "/pages", filename)
 
+# Add this route to handle CSS files in the pages directory
+@app.route("/pages/<path:filename>.css")
+def serve_css(filename):
+    return send_from_directory(app.static_folder + "/pages", f"{filename}.css", mimetype='text/css')
 
 # -------------------------
 # Sign Up (fake) route
@@ -284,3 +288,4 @@ def official_schedule():
 # -------------------------
 if __name__ == "__main__":
     app.run(debug=True)
+
