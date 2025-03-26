@@ -11,7 +11,7 @@
 
 ---
 
-## 🚀 Phase 2: Starting Soon
+## 🚀 Phase 2: Expected completion: April 15th
 
 ### Upcoming Features:
 - Secure account creation
@@ -23,7 +23,7 @@
 
 ---
 
-## ⏸️ Phase 3: Postponed Until Further Notice
+## ⏸️ Phase 3: Expected Start April 20th
 
 ### Planned Features:
 - Full clock-in / clock-out system
