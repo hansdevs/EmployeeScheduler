@@ -7,44 +7,41 @@
   - **Password:** `password`  
 - Basic styling applied  
 - **Note:** Assigning employees to *stations* is required for scheduling  
-- Currently, new companies or custom configurations **cannot** be set up
+- Currently, new companies or custom configurations **cannot** be set up  
 
 ---
 
-## 🚀 Phase 2: Expected completion: April 15th
+## 🚀 Phase 2: Expected Completion: April 15th
 
-### Bugs
+### 🐞 Bugs
+- ⏳ Clock-in/out data not saving or displaying correctly
 
-*⏳ - data not working for employee clock in clock out*
-
-
-### Upcoming Features:
-- Secure account creation
-- ✅ Revamped user interface (UI)
-- Stations will no longer be required
-- Basic clock-in functionality
-- ✅ React added
-- ✅ Bootstrap added
-- Custom employee IDs
+### 🔧 Upcoming Features
+- Secure account creation  
+- ✅ Revamped User Interface (UI)  
+- Stations will no longer be required  
+- Basic Clock-In Functionality  
+- ✅ React added  
+- ✅ Bootstrap added  
+- Custom Employee IDs  
 
 ---
 
 ## ⏸️ Phase 3: Expected Start April 20th
 
-### Bugs
+### 🐞 Bugs  
+_(To be updated as issues are found)_
 
-### Planned Features:
-- Full clock-in / clock-out system  
-- Admin and Manager roles  
-- Custom Business Owner Profile and Employee Profiles  
-- Page restrictions per role  
-- Kiosk mode for schools (touchscreen login for students/staff)  
-- Integration with Google Calendar / Apple Calendar / Outlook Calendar  
-- Hard Testing when finalized  
+### 🔧 Planned Features
+- Full Clock-In / Clock-Out System  
+- Admin and Manager Roles  
+- Custom Business Owner and Employee Profiles  
+- Role-Based Page Restrictions  
+- Kiosk Mode for schools (touchscreen login for students/staff)  
+- Integration with Google / Apple / Outlook Calendars  
+- Extensive Testing Once Features Are Finalized  
 
----
-
-### 🔧 Additional Features:
+### 🧩 Additional Features
 - **Time Clock History View** (for employees and admins to review punch-in/out history)  
 - **Edit Past Clock Entries** (admin-level correction tool)  
 - **Basic Schedule View** (per employee, per week—sets foundation for PDF export in Phase 4)  
@@ -55,36 +52,33 @@
 - **User Invite System** (owner/manager invites employees via email)  
 - **Profile Picture Uploads** (optional—useful for kiosk mode or employee list clarity)
 
-
-
 ---
 
 ## ⏳ Phase 4: Pending  
 **Summer**
 
 ### 📌 Planned Features
-- Department-based schedule grouping (compartmentalization)  
-- Email and SMS notifications for:  
-  - Shift reminders  
-  - Schedule changes  
-  - Clock-in/clock-out alerts (for admins)  
-- Cloudflare hosting for beta testing and CDN protection  
-- Role-based access to schedule visibility (e.g., restrict visibility to assigned shifts only)  
-- **Shift conflict detection** (overlaps, double-bookings, etc.)  
-- **Time clock status dashboard** (who’s clocked in now, auto-refreshing)  
-- **Weekly Schedule PDF export & print view**  
-- **Employee Availability** system (e.g., block out times employees can’t work)
+- Department-Based Schedule Grouping (compartmentalization)  
+- Email and SMS Notifications for:  
+  - Shift Reminders  
+  - Schedule Changes  
+  - Clock-In/Clock-Out Alerts (for admins)  
+- Cloudflare Hosting for Beta Testing and CDN Protection  
+- Role-Based Access to Schedule Visibility (e.g., restrict visibility to assigned shifts only)  
+- **Shift Conflict Detection** (overlaps, double-bookings, etc.)  
+- **Time Clock Status Dashboard** (who’s clocked in now, auto-refreshing)  
+- **Weekly Schedule PDF Export & Print View**  
+- **Employee Availability System** (e.g., block out times employees can’t work)
 
 ---
 
 ## ⏳ Phase 5: Future Scope  
 **Fall**
 
-- Integrated payment system (Square preferred, explore Stripe)  
-- Employee mobile login (Admin/Manager access stays web-based)  
-  - Mobile push notifications for schedule changes and reminders  
-- Auto-generate labor cost summaries by week/month  
-- Time-off blackouts (e.g., no time off during specific business events)  
-- Location geofencing for punch-in validation (via mobile)
-
-
+### 📌 Planned Features
+- Integrated Payment System (Square preferred, explore Stripe)  
+- Employee Mobile Login (Admin/Manager access stays web-based)  
+  - Mobile Push Notifications for schedule changes and reminders  
+- Auto-Generate Labor Cost Summaries by Week/Month  
+- Time-Off Blackouts (e.g., no time off during specific business events)  
+- Location Geofencing for Punch-In Validation (via mobile)
