@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time Clock</title>
+
+<!-- Bootstrap CSS -->
+<link
+rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+/>
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+<!-- Custom CSS -->
+<link rel="stylesheet" href="/pages/schedule.css" />
+</head>
+<body>
+<!-- TOP NAV BAR -->
+<div class="navbar">
+<div class="container-fluid">
+<div class="d-flex align-items-center">
+  <strong class="text-white me-3">Scheduler Beta</strong>
+  <a href="/pages/index.html" class="text-white-50 me-3">Home</a>
+  <a href="/pages/schedule.html" class="text-white-50 me-3">Schedule</a>
+  <a href="/pages/business.html" class="text-white-50 me-3">Business</a>
+  <a href="/pages/employees.html" class="text-white-50 me-3">Employees</a>
+  <a href="/pages/stations.html" class="text-white-50 me-3">Stations</a>
+  <a href="/pages/official.html" class="text-white-50 me-3">Official&nbsp;Schedule</a>
+  <a href="/pages/timeclock.html" class="text-white me-3">Time&nbsp;Clock</a>
+</div>
+<div id="localTime" class="text-white-50 small"></div>
+</div>
+</div>
+
+<div class="container-fluid py-4">
+<div id="statusMessage"></div>
+
+<div class="timeclock-container">
+<div class="timeclock-header">
+  <h2 class="timeclock-title">Employee Time Clock</h2>
+  <div class="current-time-display">
+    <div id="currentTime" class="display-time">00:00:00</div>
+    <div id="currentDate" class="display-date">Loading date...</div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="punch-card">
+      <div class="punch-card-header">
+        <h3><i class="bi bi-clock-history me-2"></i>Punch In/Out</h3>
+      </div>
+      <div class="punch-card-body">
+        <div class="input-group mb-3">
+          <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+          <input type="text" id="punchIdInput" class="form-control form-control-lg" placeholder="Enter ID/Code">
+        </div>
+        
+        <div class="keypad">
+          <div class="keypad-row">
+            <button class="keypad-btn" onclick="appendToInput('1')">1</button>
+            <button class="keypad-btn" onclick="appendToInput('2')">2</button>
+            <button class="keypad-btn" onclick="appendToInput('3')">3</button>
+          </div>
+          <div class="keypad-row">
+            <button class="keypad-btn" onclick="appendToInput('4')">4</button>
+            <button class="keypad-btn" onclick="appendToInput('5')">5</button>
+            <button class="keypad-btn" onclick="appendToInput('6')">6</button>
+          </div>
+          <div class="keypad-row">
+            <button class="keypad-btn" onclick="appendToInput('7')">7</button>
+            <button class="keypad-btn" onclick="appendToInput('8')">8</button>
+            <button class="keypad-btn" onclick="appendToInput('9')">9</button>
+          </div>
+          <div class="keypad-row">
+            <button class="keypad-btn keypad-clear" onclick="clearInput()">Clear</button>
+            <button class="keypad-btn" onclick="appendToInput('0')">0</button>
+            <button class="keypad-btn keypad-enter" onclick="processPunch()">Enter</button>
+          </div>
+        </div>
+        
+        <div id="punchStatus" class="alert d-none mt-3"></div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-6">
+    <div class="punch-card">
+      <div class="punch-card-header">
+        <h3><i class="bi bi-list-check me-2"></i>Recent Activity</h3>
+      </div>
+      <div class="punch-card-body">
+        <div id="recentActivity" class="recent-activity">
+          <div class="activity-empty">
+            <i class="bi bi-clock"></i>
+            <p>No recent activity</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="punch-card mt-4">
+      <div class="punch-card-header">
+        <h3><i class="bi bi-people me-2"></i>Currently Clocked In</h3>
+      </div>
+      <div class="punch-card-body">
+        <div id="clockedInEmployees" class="clocked-in-list">
+          <div class="activity-empty">
+            <i class="bi bi-person-slash"></i>
+            <p>No employees currently clocked in</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Local time display -->
+<script>
+function updateLocalTime() {
+const now = new Date();
+const timeString = now.toLocaleString([], { 
+  dateStyle: 'short',
+  timeStyle: 'medium' 
+});
+document.getElementById('localTime').textContent = timeString;
+}
+setInterval(updateLocalTime, 1000);
+updateLocalTime();
+</script>
+
+<!-- Inline Time Clock JS (merged from timeclock.js) -->
+<script>
+// Global variable to store employee data
+let employeesData = []
+
+// Update the current time display
+function updateTimeDisplay() {
+  const now = new Date()
+
+  // Format time as HH:MM:SS
+  const hours = String(now.getHours()).padStart(2, "0")
+  const minutes = String(now.getMinutes()).padStart(2, "0")
+  const seconds = String(now.getSeconds()).padStart(2, "0")
+  document.getElementById("currentTime").textContent = `${hours}:${minutes}:${seconds}`
+
+  // Format date as Day of Week, Month Day, Year
+  const options = { weekday: "long", year: "numeric", month: "long", day: "numeric" }
+  document.getElementById("currentDate").textContent = now.toLocaleDateString(undefined, options)
+}
+
+// Start the clock update interval
+function initClock() {
+  setInterval(updateTimeDisplay, 1000)
+  updateTimeDisplay()
+}
+
+// Keypad functions
+function appendToInput(value) {
+  const input = document.getElementById("punchIdInput")
+  input.value += value
+}
+
+function clearInput() {
+  document.getElementById("punchIdInput").value = ""
+}
+
+// Load employees data
+async function loadEmployees() {
+  try {
+    const response = await fetch("/api/employees")
+    if (!response.ok) {
+      throw new Error("Failed to load employees")
+    }
+
+    const data = await response.json()
+    employeesData = data // Store globally
+    console.log("Loaded employees:", employeesData)
+    return data
+  } catch (err) {
+    console.error("Error loading employees:", err)
+    return []
+  }
+}
+
+// Process punch in/out
+async function processPunch() {
+  const punchId = document.getElementById("punchIdInput").value.trim()
+  if (!punchId) {
+    showPunchStatus("Please enter your ID/Punch Code", "warning")
+    return
+  }
+
+  try {
+    console.log(`Attempting to punch with ID/Code: ${punchId}`)
+
+    // Reload employees to ensure we have the latest data
+    await loadEmployees()
+
+    // Find the employee by either custom_id or system id
+    let matchedEmployee = null
+
+    // First try to match by custom_id (string comparison)
+    matchedEmployee = employeesData.find((emp) => emp.custom_id === punchId)
+
+    // If not found, try to match by system id (numeric comparison)
+    if (!matchedEmployee) {
+      const numericId = Number.parseInt(punchId, 10)
+      if (!isNaN(numericId)) {
+        matchedEmployee = employeesData.find((emp) => emp.id === numericId)
+      }
+    }
+
+    if (!matchedEmployee) {
+      throw new Error(`No employee found with ID/Code: ${punchId}`)
+    }
+
+    console.log("Found employee:", matchedEmployee)
+
+    // Create a new employee record to send to the server
+    // This is a workaround for the backend data synchronization issue
+    const employeeToRegister = {
+      id: matchedEmployee.id,
+      name: matchedEmployee.name,
+      type: matchedEmployee.type,
+      color: matchedEmployee.color,
+      custom_id: matchedEmployee.custom_id,
+    }
+
+    // First, register/update the employee to ensure it's in the timeclock system
+    const registerResponse = await fetch("/api/timeclock/register-employee", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(employeeToRegister),
+    })
+
+    if (!registerResponse.ok) {
+      console.warn("Failed to register employee with timeclock system, attempting punch anyway")
+    } else {
+      console.log("Successfully registered employee with timeclock system")
+    }
+
+    // Now attempt the punch with the system ID
+    const response = await fetch("/api/timeclock/punch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        employee_id: matchedEmployee.id,
+        timestamp: new Date().toISOString(),
+      }),
+    })
+
+    console.log(`Received response with status: ${response.status}`)
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || `Failed to process punch (status ${response.status})`)
+    }
+
+    const data = await response.json()
+    console.log(`Response data:`, data)
+
+    // Show success message
+    const punchType = data.punch.type === "in" ? "IN" : "OUT"
+    showPunchStatus(`${matchedEmployee.name} successfully punched ${punchType}!`, "success")
+
+    // Clear the input for the next punch
+    clearInput()
+
+    // Refresh the activity displays
+    loadRecentActivity()
+    loadClockedInEmployees()
+  } catch (error) {
+    console.error("Punch error:", error)
+    showPunchStatus(error.message || "Error processing punch. Please try again.", "danger")
+  }
+}
+
+function showPunchStatus(message, type) {
+  const statusDiv = document.getElementById("punchStatus")
+  statusDiv.className = `alert alert-${type} mt-3`
+  statusDiv.innerHTML = message
+  statusDiv.classList.remove("d-none")
+
+  // Clear the status after 5 seconds
+  setTimeout(() => {
+    statusDiv.classList.add("d-none")
+  }, 5000)
+}
+
+// Load recent activity
+async function loadRecentActivity() {
+  try {
+    const response = await fetch("/api/timeclock/activity")
+
+    if (!response.ok) {
+      throw new Error("Failed to load recent activity")
+    }
+
+    const data = await response.json()
+    const activityDiv = document.getElementById("recentActivity")
+
+    if (!data.activity || data.activity.length === 0) {
+      activityDiv.innerHTML = `
+        <div class="activity-empty">
+          <i class="bi bi-clock"></i>
+          <p>No recent activity</p>
+        </div>
+      `
+      return
+    }
+
+    let activityHtml = ""
+    data.activity.forEach((item) => {
+      const timestamp = new Date(item.timestamp)
+      const timeString = timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      const dateString = timestamp.toLocaleDateString([], { month: "short", day: "numeric" })
+
+      activityHtml += `
+        <div class="activity-item ${item.type === "in" ? "activity-in" : "activity-out"}">
+          <div class="activity-time">${timeString}<br><small>${dateString}</small></div>
+          <div class="activity-details">
+            <div class="activity-name">${item.employee_name}</div>
+            <div class="activity-type">Punched ${item.type.toUpperCase()}</div>
+          </div>
+        </div>
+      `
+    })
+
+    activityDiv.innerHTML = activityHtml
+  } catch (error) {
+    console.error(error)
+    document.getElementById("recentActivity").innerHTML = `
+      <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        Error loading activity: ${error.message}
+      </div>
+    `
+  }
+}
+
+// Load currently clocked in employees
+async function loadClockedInEmployees() {
+  try {
+    const response = await fetch("/api/timeclock/clocked-in")
+
+    if (!response.ok) {
+      throw new Error("Failed to load clocked in employees")
+    }
+
+    const data = await response.json()
+    const clockedInDiv = document.getElementById("clockedInEmployees")
+
+    if (!data.employees || data.employees.length === 0) {
+      clockedInDiv.innerHTML = `
+        <div class="activity-empty">
+          <i class="bi bi-person-slash"></i>
+          <p>No employees currently clocked in</p>
+        </div>
+      `
+      return
+    }
+
+    let employeesHtml = ""
+    data.employees.forEach((emp) => {
+      const punchTime = new Date(emp.punch_time)
+      const timeString = punchTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+
+      employeesHtml += `
+        <div class="clocked-in-item">
+          <div class="employee-avatar ${emp.color || "block-blue"}">
+            ${emp.name.charAt(0).toUpperCase()}
+          </div>
+          <div class="employee-details">
+            <div class="employee-name">${emp.name}</div>
+            <div class="employee-time">Since ${timeString}</div>
+          </div>
+        </div>
+      `
+    })
+
+    clockedInDiv.innerHTML = employeesHtml
+  } catch (error) {
+    console.error(error)
+    document.getElementById("clockedInEmployees").innerHTML = `
+      <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        Error loading clocked in employees: ${error.message}
+      </div>
+    `
+  }
+}
+
+// Initialize on page load
+document.addEventListener("DOMContentLoaded", async () => {
+  initClock()
+
+  // Load employees first to ensure we have the data
+  await loadEmployees()
+
+  loadRecentActivity()
+  loadClockedInEmployees()
+
+  // Focus the input field
+  document.getElementById("punchIdInput").focus()
+
+  // Add keyboard support for the punch input
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      processPunch()
+    }
+  })
+})
+</script>
+</body>
+</html>
+

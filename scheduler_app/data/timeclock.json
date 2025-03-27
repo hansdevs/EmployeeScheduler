@@ -1,0 +1,8 @@
+{
+  "settings": {
+    "enforce_schedule": false,
+    "allow_remote_punch": false,
+    "require_photo": false
+  },
+  "punches": []
+}

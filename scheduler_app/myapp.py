@@ -1,476 +1,514 @@
-from flask import Flask, jsonify, request, send_from_directory, redirect, session
+from flask import Flask, request, jsonify, send_from_directory
+import json
+import os
+import datetime
 
-app = Flask(__name__, static_folder='static', static_url_path='')
-app.secret_key = "supersecretkey"
+# Initialize Flask app
+app = Flask(__name__, static_folder='static')
 
-# =====================
-# In-memory "database"
-# =====================
-BUSINESS_INFO = {
-    "name": "John Doe's Retail Store",
-    "industry": "Retail",
-    # "requirements": ["Office Desk", "Office Desk"],
-    "hours": {
-        0: {"open": 8,  "close": 17},
-        1: {"open": 8,  "close": 17},
-        2: {"open": 8,  "close": 17},
-        3: {"open": 8,  "close": 17},
-        4: {"open": 8,  "close": 17},
-        5: {"open": 0,  "close": 0},
-        6: {"open": 0,  "close": 0},
-    }
-}
+# Get the path to the data directory
+data_dir = os.path.join(os.path.dirname(__file__), 'data')
 
+# Global variable to store employees
 EMPLOYEES = []
-STATIONS  = []
-SCHEDULE  = []
-SCHEDULE_PUBLISHED = False
 
-# Just for demo: user theme info
-USER_INFO = {
-    "username": "DemoUser",
-    "theme": "light"
-}
+# Load employees from data source
+def load_employees():
+  global EMPLOYEES
+  try:
+      # Try to load from employees.json if it exists
+      employees_file = os.path.join(data_dir, 'employees.json')
+      if os.path.exists(employees_file):
+          with open(employees_file, 'r') as f:
+              EMPLOYEES = json.load(f)
+      else:
+          # Initialize with empty list if file doesn't exist
+          EMPLOYEES = []
+  except Exception as e:
+      print(f"Error loading employees: {e}")
+      EMPLOYEES = []
+  return EMPLOYEES
 
-# -------------------------
-# Landing page (index.html)
-# -------------------------
-@app.route("/")
-def serve_landing():
-    # Serve /static/pages/index.html
-    return send_from_directory(app.static_folder + "/pages", "index.html")
+# Save employees to data source
+def save_employees():
+  try:
+      employees_file = os.path.join(data_dir, 'employees.json')
+      with open(employees_file, 'w') as f:
+          json.dump(EMPLOYEES, f, indent=2)
+  except Exception as e:
+      print(f"Error saving employees: {e}")
 
-# -------------------------
-# Protected pages: user must be logged_in
-# -------------------------
-PROTECTED_PAGES = {
-    "welcome.html",
-    "/pages/schedule.html",
-    "/pages/business.html",
-    "/pages/employees.html",
-    "/pages/stations.html",
-    "/pages/official.html"
-}
-
-@app.route("/pages/<path:filename>")
-def serve_pages(filename):
-    """
-    If user tries to access a protected page but isn't logged in,
-    redirect them to getstarted.html
-    """
-    if filename in PROTECTED_PAGES and not session.get("logged_in"):
-        return redirect("/pages/getstarted.html")
-
-    return send_from_directory(app.static_folder + "/pages", filename)
-
-# Add this route to handle CSS files in the pages directory
-@app.route("/pages/<path:filename>.css")
-def serve_css(filename):
-    return send_from_directory(app.static_folder + "/pages", f"{filename}.css", mimetype='text/css')
-
-# Add this route to handle JS files
-@app.route("/js/<path:filename>")
-def serve_js(filename):
-    return send_from_directory(app.static_folder + "/js", filename, mimetype='application/javascript')
-
-# -------------------------
-# Sign Up (fake) route
-# -------------------------
-@app.route("/fake_signup", methods=["POST"])
-def fake_signup():
-    """
-    From getstarted.html:
-      companyName, fullName, email, password
-    Must be: test, test, test@gmail.com, password
-    """
-    companyName = request.form.get("companyName","").strip()
-    fullName    = request.form.get("fullName","").strip()
-    email       = request.form.get("email","").strip()
-    password    = request.form.get("password","").strip()
-
-    if (companyName == "test" and fullName == "test" and
-        email == "test@gmail.com" and password == "password"):
-        session["logged_in"] = True
-        return redirect("/pages/welcome.html")
-    else:
-        return (
-            "<h2>Invalid test credentials for sign-up.<br>"
-            "Expected: companyName='test', fullName='test', "
-            "email='test@gmail.com', password='password' (8 chars)</h2>"
-        )
-
-# -------------------------
-# Sign In (fake) route
-# -------------------------
-@app.route("/fake_signin", methods=["POST"])
-def fake_signin():
-    """
-    From signin.html:
-      email, password
-    Must be: test@gmail.com, password
-    """
-    email    = request.form.get("email","").strip()
-    password = request.form.get("password","").strip()
-
-    if email == "test@gmail.com" and password == "password":
-        session["logged_in"] = True
-        return redirect("/pages/welcome.html")
-    else:
-        return (
-            "<h2>Invalid credentials for sign-in.<br>"
-            "Use email='test@gmail.com', password='password'.</h2>"
-        )
-
-# -------------------------
-# User/Theme endpoints
-# -------------------------
-@app.route("/api/user", methods=["GET"])
-def get_user():
-    return jsonify(USER_INFO)
-
-@app.route("/api/theme", methods=["PUT"])
-def update_theme():
-    data = request.json or {}
-    new_theme = data.get("theme", "light")
-    USER_INFO["theme"] = new_theme
-    return jsonify({"status": "ok", "theme": new_theme})
-
-# -------------------------
-# BUSINESS API
-# -------------------------
-@app.route("/api/business", methods=["GET"])
-def get_business():
-    return jsonify(BUSINESS_INFO)
-
-@app.route("/api/business", methods=["POST"])
-def update_business():
-    global BUSINESS_INFO
-    data = request.json
-    if not data:
-        return jsonify({"error": "No JSON body provided"}), 400
-
-    BUSINESS_INFO["name"] = data.get("name", BUSINESS_INFO["name"])
-    BUSINESS_INFO["industry"] = data.get("industry", BUSINESS_INFO["industry"])
-    
-    # Handle requirements if they exist in the data
-    if "requirements" in data:
-        reqs = data.get("requirements")
-        if isinstance(reqs, str):
-            reqs = [r.strip() for r in reqs.split(",") if r.strip()]
-        BUSINESS_INFO["requirements"] = reqs
-    
-    hours = data.get("hours", {})
-    for d in range(7):
-        day_key = str(d) if isinstance(hours, dict) and str(d) in hours else d
-        if day_key in hours:
-            day_hours = hours[day_key]
-            if d not in BUSINESS_INFO["hours"]:
-                BUSINESS_INFO["hours"][d] = {"open": 0, "close": 0}
-            
-            BUSINESS_INFO["hours"][d]["open"] = day_hours.get("open", BUSINESS_INFO["hours"][d]["open"])
-            BUSINESS_INFO["hours"][d]["close"] = day_hours.get("close", BUSINESS_INFO["hours"][d]["close"])
-
-    return jsonify({"status": "ok", "business": BUSINESS_INFO})
-
-
-# -------------------------
-# EMPLOYEES API
-# -------------------------
-@app.route("/api/employees", methods=["GET"])
+# Function to get employees - can be imported by timeclock.py
 def get_employees():
-    return jsonify(EMPLOYEES)
+  global EMPLOYEES
+  if not EMPLOYEES:
+      load_employees()
+  return EMPLOYEES  # Return the actual list, not a Response
 
-@app.route("/api/employees", methods=["POST"])
+# Routes for static files
+@app.route('/')
+def index():
+  return send_from_directory(app.static_folder, 'pages/index.html')
+
+@app.route('/pages/<path:path>')
+def serve_pages(path):
+  return send_from_directory(os.path.join(app.static_folder, 'pages'), path)
+
+@app.route('/js/<path:path>')
+def serve_js(path):
+  return send_from_directory(os.path.join(app.static_folder, 'js'), path)
+
+@app.route('/styles/<path:path>')
+def serve_styles(path):
+  return send_from_directory(os.path.join(app.static_folder, 'styles'), path)
+
+@app.route('/images/<path:path>')
+def serve_images(path):
+  return send_from_directory(os.path.join(app.static_folder, 'images'), path)
+
+# API Routes
+@app.route('/api/employees', methods=['GET'])
+def get_all_employees():
+  employees = get_employees()
+  return jsonify(employees)
+
+@app.route('/api/employees', methods=['POST'])
 def add_employee():
-    global EMPLOYEES
-    data = request.json
-    if not data:
-        return jsonify({"error": "No JSON body provided"}), 400
+  try:
+      data = request.get_json(force=True)
+      print("==== EMPLOYEE CREATION REQUEST ====")
+      print(f"Request method: {request.method}")
+      print(f"Request headers: {request.headers}")
+      print(f"Raw request data: {request.data.decode('utf-8')}")
+      print(f"Parsed JSON data (force=True): {data}")
+      
+      name = data.get('name', '').strip()
+      type_val = data.get('type', '').strip()
+      color = data.get('color', 'block-blue')
+      custom_id = data.get('custom_id')
+      
+      if custom_id:
+          custom_id = str(custom_id).strip()
+      
+      print(f"Parsed data: name={name}, type={type_val}, color={color}, custom_id={custom_id}")
+      
+      if not name:
+          return jsonify({"error": "Employee name is required"}), 400
+      
+      # Check if custom_id is already in use
+      employees = get_employees()
+      if custom_id and any(emp.get('custom_id') == custom_id for emp in employees):
+          return jsonify({"error": "This ID/Punch Code is already in use"}), 400
+      
+      # Generate a new ID (max existing ID + 1)
+      new_id = 1
+      if employees:
+          new_id = max(emp.get('id', 0) for emp in employees) + 1
+      
+      # Create new employee
+      new_employee = {
+          'id': new_id,
+          'name': name,
+          'type': type_val,
+          'color': color,
+          'custom_id': custom_id
+      }
+      
+      print(f"Adding new employee: {new_employee}")
+      
+      # Add to global list
+      employees.append(new_employee)
+      
+      # Save to file
+      save_employees()
+      
+      print(f"Current employees: {employees}")
+      
+      return jsonify(new_employee)
+  except Exception as e:
+      print(f"Error adding employee: {e}")
+      return jsonify({"error": str(e)}), 500
 
-    new_name  = data.get("name", "").strip()
-    new_type  = data.get("type", "").strip()
-    new_color = data.get("color", "block-blue").strip()
-    custom_id = data.get("custom_id")
-    
-    if custom_id:
-        custom_id = str(custom_id).strip()
-        # Check if custom_id is already in use
-        if any(e.get("custom_id") == custom_id for e in EMPLOYEES):
-            return jsonify({"error": "This ID/Punch Code is already in use"}), 400
-
-    if not new_name:
-        return jsonify({"error": "Employee name required"}), 400
-
-    new_id = max([e["id"] for e in EMPLOYEES], default=0) + 1
-    new_employee = {
-        "id": new_id,
-        "name": new_name,
-        "type": new_type,
-        "color": new_color
-    }
-    
-    if custom_id:
-        new_employee["custom_id"] = custom_id
-        
-    EMPLOYEES.append(new_employee)
-    return jsonify({"status": "ok", "employee": new_employee})
-
-# UPDATE EMPLOYEE ENDPOINT
-@app.route("/api/employees/<int:employee_id>", methods=["PUT"])
+@app.route('/api/employees/<int:employee_id>', methods=['PUT'])
 def update_employee(employee_id):
-    global EMPLOYEES
-    data = request.json
-    if not data:
-        return jsonify({"error": "No JSON body provided"}), 400
-        
-    employee = next((e for e in EMPLOYEES if e["id"] == employee_id), None)
-    if not employee:
-        return jsonify({"error": "Employee not found"}), 404
-    
-    # Check if custom_id is being updated and is not already in use by another employee
-    if "custom_id" in data:
-        custom_id = data["custom_id"]
-        if custom_id:
-            custom_id = str(custom_id).strip()
-            # Check if custom_id is already in use by another employee
-            if any(e.get("custom_id") == custom_id and e["id"] != employee_id for e in EMPLOYEES):
-                return jsonify({"error": "This ID/Punch Code is already in use"}), 400
-        employee["custom_id"] = custom_id
-    
-    if "name" in data and data["name"].strip():
-        employee["name"] = data["name"].strip()
-        
-    if "type" in data:
-        employee["type"] = data["type"].strip()
-        
-    if "color" in data and data["color"].strip():
-        employee["color"] = data["color"].strip()
-        
-    return jsonify({"status": "ok", "employee": employee})
+  try:
+      data = request.get_json(force=True)
+      
+      name = data.get('name', '').strip()
+      type_val = data.get('type', '').strip()
+      custom_id = data.get('custom_id')
+      
+      if custom_id:
+          custom_id = str(custom_id).strip()
+      
+      if not name:
+          return jsonify({"error": "Employee name is required"}), 400
+      
+      # Check if custom_id is already in use by another employee
+      employees = get_employees()
+      if custom_id and any(emp.get('custom_id') == custom_id and emp.get('id') != employee_id for emp in employees):
+          return jsonify({"error": "This ID/Punch Code is already in use by another employee"}), 400
+      
+      # Find and update employee
+      for emp in employees:
+          if emp.get('id') == employee_id:
+              emp['name'] = name
+              emp['type'] = type_val
+              emp['custom_id'] = custom_id
+              
+              # Save to file
+              save_employees()
+              
+              return jsonify(emp)
+      
+      return jsonify({"error": "Employee not found"}), 404
+  except Exception as e:
+      print(f"Error updating employee: {e}")
+      return jsonify({"error": str(e)}), 500
 
-# DELETE EMPLOYEE ENDPOINT
-@app.route("/api/employees/<int:employee_id>", methods=["DELETE"])
+@app.route('/api/employees/<int:employee_id>', methods=['DELETE'])
 def delete_employee(employee_id):
-    global EMPLOYEES
-    employee = next((e for e in EMPLOYEES if e["id"] == employee_id), None)
-    if not employee:
-        return jsonify({"error": "Employee not found"}), 404
+  try:
+      employees = get_employees()
+      
+      # Find employee index
+      index = None
+      for i, emp in enumerate(employees):
+          if emp.get('id') == employee_id:
+              index = i
+              break
+      
+      if index is not None:
+          # Remove employee
+          removed = employees.pop(index)
+          
+          # Save to file
+          save_employees()
+          
+          return jsonify({"success": True, "removed": removed})
+      
+      return jsonify({"error": "Employee not found"}), 404
+  except Exception as e:
+      print(f"Error deleting employee: {e}")
+      return jsonify({"error": str(e)}), 500
 
-    EMPLOYEES.remove(employee)
-    return jsonify({"status": "ok", "deleted_id": employee_id})
+# Business routes
+@app.route('/api/business', methods=['GET'])
+def get_business_info():
+  try:
+      business_file = os.path.join(data_dir, 'business.json')
+      if os.path.exists(business_file):
+          with open(business_file, 'r') as f:
+              business_data = json.load(f)
+      else:
+          # Default business info
+          business_data = {
+              "name": "Unnamed Business",
+              "industry": "",
+              "hours": {
+                  "0": {"open": 9, "close": 17},  # Monday
+                  "1": {"open": 9, "close": 17},  # Tuesday
+                  "2": {"open": 9, "close": 17},  # Wednesday
+                  "3": {"open": 9, "close": 17},  # Thursday
+                  "4": {"open": 9, "close": 17},  # Friday
+                  "5": {"open": 10, "close": 15},  # Saturday
+                  "6": {"open": 0, "close": 0}    # Sunday (closed)
+              }
+          }
+      
+      return jsonify(business_data)
+  except Exception as e:
+      print(f"Error getting business info: {e}")
+      return jsonify({"error": str(e)}), 500
 
-# -------------------------
-# STATIONS API
-# -------------------------
-@app.route("/api/stations", methods=["GET"])
+@app.route('/api/business', methods=['POST'])
+def update_business_info():
+  try:
+      data = request.get_json(force=True)
+      
+      # Validate required fields
+      name = data.get('name', '').strip()
+      if not name:
+          return jsonify({"error": "Business name is required"}), 400
+      
+      # Create business data object
+      business_data = {
+          "name": name,
+          "industry": data.get('industry', '').strip(),
+          "hours": data.get('hours', {})
+      }
+      
+      # Save to file
+      business_file = os.path.join(data_dir, 'business.json')
+      with open(business_file, 'w') as f:
+          json.dump(business_data, f, indent=2)
+      
+      return jsonify({"success": True, "business": business_data})
+  except Exception as e:
+      print(f"Error updating business info: {e}")
+      return jsonify({"error": str(e)}), 500
+
+# Stations routes
+@app.route('/api/stations', methods=['GET'])
 def get_stations():
-    return jsonify(STATIONS)
+  try:
+      stations_file = os.path.join(data_dir, 'stations.json')
+      if os.path.exists(stations_file):
+          with open(stations_file, 'r') as f:
+              stations = json.load(f)
+      else:
+          stations = []
+      
+      return jsonify(stations)
+  except Exception as e:
+      print(f"Error getting stations: {e}")
+      return jsonify({"error": str(e)}), 500
 
-@app.route("/api/stations", methods=["POST"])
+@app.route('/api/stations', methods=['POST'])
 def add_station():
-    global STATIONS
-    data = request.json
-    if not data:
-        return jsonify({"error": "No JSON body provided"}), 400
+  try:
+      data = request.get_json(force=True)
+      
+      # Validate required fields
+      name = data.get('name', '').strip()
+      if not name:
+          return jsonify({"error": "Station name is required"}), 400
+      
+      # Load existing stations
+      stations_file = os.path.join(data_dir, 'stations.json')
+      if os.path.exists(stations_file):
+          with open(stations_file, 'r') as f:
+              stations = json.load(f)
+      else:
+          stations = []
+      
+      # Generate a new ID (max existing ID + 1)
+      new_id = 1
+      if stations:
+          new_id = max(st.get('id', 0) for st in stations) + 1
+      
+      # Create new station
+      new_station = {
+          'id': new_id,
+          'name': name,
+          'type': data.get('type', '').strip()
+      }
+      
+      # Add to list
+      stations.append(new_station)
+      
+      # Save to file
+      with open(stations_file, 'w') as f:
+          json.dump(stations, f, indent=2)
+      
+      return jsonify(new_station)
+  except Exception as e:
+      print(f"Error adding station: {e}")
+      return jsonify({"error": str(e)}), 500
 
-    new_name = data.get("name", "").strip()
-    new_type = data.get("type", "").strip()
-    if not new_name:
-        return jsonify({"error": "Station name required"}), 400
-
-    new_id = max([s["id"] for s in STATIONS], default=0) + 1
-    new_station = {
-        "id": new_id,
-        "name": new_name,
-        "type": new_type
-    }
-    STATIONS.append(new_station)
-    return jsonify({"status": "ok", "station": new_station})
-
-# -------------------------
-# SCHEDULE API
-# -------------------------
-@app.route("/api/schedule", methods=["GET"])
+# Schedule routes
+@app.route('/api/schedule', methods=['GET'])
 def get_schedule():
-    return jsonify({
-        "schedule": SCHEDULE,
-        "business": BUSINESS_INFO,
-        "employees": EMPLOYEES,
-        "stations": STATIONS,
-        "is_published": SCHEDULE_PUBLISHED
-    })
+  try:
+      # Load schedule data
+      schedule_file = os.path.join(data_dir, 'schedule.json')
+      if os.path.exists(schedule_file):
+          with open(schedule_file, 'r') as f:
+              schedule_data = json.load(f)
+      else:
+          schedule_data = {
+              "schedule": [],
+              "is_published": False
+          }
+      
+      # Load business info
+      business_file = os.path.join(data_dir, 'business.json')
+      if os.path.exists(business_file):
+          with open(business_file, 'r') as f:
+              business_data = json.load(f)
+      else:
+          business_data = {
+              "name": "Unnamed Business",
+              "industry": "",
+              "hours": {}
+          }
+      
+      # Load employees
+      employees = get_employees()
+      
+      # Load stations
+      stations_file = os.path.join(data_dir, 'stations.json')
+      if os.path.exists(stations_file):
+          with open(stations_file, 'r') as f:
+              stations = json.load(f)
+      else:
+          stations = []
+      
+      # Combine all data
+      response_data = {
+          "schedule": schedule_data.get("schedule", []),
+          "is_published": schedule_data.get("is_published", False),
+          "business": business_data,
+          "employees": employees,
+          "stations": stations
+      }
+      
+      return jsonify(response_data)
+  except Exception as e:
+      print(f"Error getting schedule: {e}")
+      return jsonify({"error": str(e)}), 500
 
-@app.route("/api/schedule", methods=["POST"])
-def save_schedule():
-    global SCHEDULE, SCHEDULE_PUBLISHED
-    data = request.json
-    if not data:
-        return jsonify({"error": "No JSON body provided"}), 400
+@app.route('/api/schedule', methods=['POST'])
+def update_schedule():
+  try:
+      data = request.get_json(force=True)
+      
+      # Get shifts and action
+      shifts = data.get('shifts', [])
+      action = data.get('action', 'draft')  # 'draft' or 'publish'
+      
+      # Create schedule data
+      schedule_data = {
+          "schedule": shifts,
+          "is_published": action == 'publish',
+          "last_updated": datetime.datetime.now().isoformat()
+      }
+      
+      # Save to file
+      schedule_file = os.path.join(data_dir, 'schedule.json')
+      with open(schedule_file, 'w') as f:
+          json.dump(schedule_data, f, indent=2)
+      
+      return jsonify({
+          "status": "published" if action == 'publish' else "draft",
+          "message": "Schedule has been " + ("published" if action == 'publish' else "saved as draft")
+      })
+  except Exception as e:
+      print(f"Error updating schedule: {e}")
+      return jsonify({"error": str(e)}), 500
 
-    shifts = data.get("shifts", [])
-    action = data.get("action", "draft")
+@app.route('/api/official_schedule', methods=['GET'])
+def get_official_schedule():
+  try:
+      # Load schedule data
+      schedule_file = os.path.join(data_dir, 'schedule.json')
+      if os.path.exists(schedule_file):
+          with open(schedule_file, 'r') as f:
+              schedule_data = json.load(f)
+      else:
+          schedule_data = {
+              "schedule": [],
+              "is_published": False
+          }
+      
+      # Check if schedule is published
+      if not schedule_data.get('is_published', False):
+          return jsonify({"error": "Schedule is not published"}), 400
+      
+      # Load business info
+      business_file = os.path.join(data_dir, 'business.json')
+      if os.path.exists(business_file):
+          with open(business_file, 'r') as f:
+              business_data = json.load(f)
+      else:
+          business_data = {
+              "name": "Unnamed Business",
+              "industry": "",
+              "hours": {}
+          }
+      
+      # Load employees
+      employees = get_employees()
+      
+      # Load stations
+      stations_file = os.path.join(data_dir, 'stations.json')
+      if os.path.exists(stations_file):
+          with open(stations_file, 'r') as f:
+              stations = json.load(f)
+      else:
+          stations = []
+      
+      # Combine all data
+      response_data = {
+          "schedule": schedule_data.get("schedule", []),
+          "is_published": True,
+          "business": business_data,
+          "employees": employees,
+          "stations": stations
+      }
+      
+      return jsonify(response_data)
+  except Exception as e:
+      print(f"Error getting official schedule: {e}")
+      return jsonify({"error": str(e)}), 500
 
-    if not isinstance(shifts, list):
-        return jsonify({"error": "shifts must be a list"}), 400
+# User routes
+@app.route('/api/user', methods=['GET'])
+def get_user():
+  # For demo purposes, return a mock user
+  return jsonify({
+      "id": 1,
+      "name": "Demo User",
+      "email": "demo@example.com",
+      "role": "admin",
+      "theme": "light"
+  })
 
-    SCHEDULE = shifts
-    if action == "publish":
-        SCHEDULE_PUBLISHED = True
-        return jsonify({"status": "published", "schedule": SCHEDULE})
-    else:
-        SCHEDULE_PUBLISHED = False
-        return jsonify({"status": "draft_saved", "schedule": SCHEDULE})
+@app.route('/api/theme', methods=['PUT'])
+def update_theme():
+  try:
+      data = request.get_json(force=True)
+      theme = data.get('theme', 'light')
+      
+      # In a real app, we would update the user's theme preference in a database
+      # For this demo, we'll just return success
+      
+      return jsonify({
+          "success": True,
+          "theme": theme
+      })
+  except Exception as e:
+      print(f"Error updating theme: {e}")
+      return jsonify({"error": str(e)}), 500
 
-# -------------------------
-# OFFICIAL SCHEDULE API
-# -------------------------
-@app.route("/api/official_schedule", methods=["GET"])
-def official_schedule():
-    if not SCHEDULE_PUBLISHED:
-        return jsonify({"error": "Schedule is not published"}), 400
+# Fake auth routes for demo
+@app.route('/fake_signin', methods=['POST'])
+def fake_signin():
+  # Redirect to welcome page
+  return send_from_directory(app.static_folder, 'pages/welcome.html')
 
-    return jsonify({
-        "schedule": SCHEDULE,
-        "business": BUSINESS_INFO,
-        "employees": EMPLOYEES,
-        "stations": STATIONS,
-        "is_published": SCHEDULE_PUBLISHED
-    })
+@app.route('/fake_signup', methods=['POST'])
+def fake_signup():
+  # Redirect to welcome page
+  return send_from_directory(app.static_folder, 'pages/welcome.html')
 
-# -------------------------
-# TIME CLOCK API
-# -------------------------
-# Placeholder for time clock data
-TIME_CLOCK_DATA = {
-    "settings": {
-        "enforce_schedule": True,
-        "allow_remote_punch": True,
-        "require_photo": False
-    },
-    "punches": []  # Will store punch records
-}
-
-@app.route("/api/timeclock/settings", methods=["GET"])
-def get_timeclock_settings():
-    return jsonify(TIME_CLOCK_DATA["settings"])
-
-@app.route("/api/timeclock/settings", methods=["POST"])
-def update_timeclock_settings():
-    data = request.json
-    if not data:
-        return jsonify({"error": "No JSON body provided"}), 400
+# Timeclock endpoint that uses the record_punch function from timeclock.py
+@app.route('/api/timeclock/punch_endpoint', methods=['POST'])
+def punch_endpoint():
+    try:
+        from timeclock import record_punch
         
-    TIME_CLOCK_DATA["settings"]["enforce_schedule"] = data.get("enforce_schedule", 
-                                                      TIME_CLOCK_DATA["settings"]["enforce_schedule"])
-    TIME_CLOCK_DATA["settings"]["allow_remote_punch"] = data.get("allow_remote_punch", 
-                                                        TIME_CLOCK_DATA["settings"]["allow_remote_punch"])
-    TIME_CLOCK_DATA["settings"]["require_photo"] = data.get("require_photo", 
-                                                   TIME_CLOCK_DATA["settings"]["require_photo"])
-    
-    return jsonify({"status": "ok", "settings": TIME_CLOCK_DATA["settings"]})
+        data = request.get_json(force=True)
+        employee_id = data.get('employee_id')
+        punch_type = data.get('punch_type')  # Optional
+        timestamp = data.get('timestamp')    # Optional
+        photo_data = data.get('photo_data')  # Optional
+        
+        result = record_punch(employee_id, timestamp, punch_type, photo_data)
+        
+        # Check if result is a tuple (response, status_code)
+        if isinstance(result, tuple) and len(result) == 2:
+            return jsonify(result[0]), result[1]
+        
+        # Otherwise, it's just the response data
+        return jsonify(result)
+    except Exception as e:
+        print(f"Error in punch_endpoint: {e}")
+        return jsonify({"error": str(e)}), 500
 
-@app.route("/api/timeclock/punch", methods=["POST"])
-def record_punch():
-    data = request.json
-    if not data:
-        return jsonify({"error": "No JSON body provided"}), 400
-        
-    employee_id = data.get("employee_id")
-    if not employee_id:
-        return jsonify({"error": "Employee ID required"}), 400
-        
-    # Find employee by ID or custom_id
-    employee = None
-    for emp in EMPLOYEES:
-        if str(emp["id"]) == str(employee_id) or str(emp.get("custom_id", "")) == str(employee_id):
-            employee = emp
-            break
-            
-    if not employee:
-        return jsonify({"error": "Employee not found"}), 404
-        
-    punch_type = data.get("type", "in")  # "in" or "out"
-    timestamp = data.get("timestamp", None)  # Client can provide timestamp or we use server time
-    
-    # Create punch record
-    punch = {
-        "employee_id": employee["id"],
-        "type": punch_type,
-        "timestamp": timestamp,
-        "verified": not TIME_CLOCK_DATA["settings"]["require_photo"]  # Auto-verify if photos not required
-    }
-    
-    TIME_CLOCK_DATA["punches"].append(punch)
-    
-    return jsonify({
-        "status": "ok", 
-        "punch": punch,
-        "employee": employee
-    })
+# Load employees on startup
+load_employees()
 
-@app.route("/api/timeclock/status/<employee_id>", methods=["GET"])
-def get_employee_status(employee_id):
-    # Find employee by ID or custom_id
-    employee = None
-    for emp in EMPLOYEES:
-        if str(emp["id"]) == str(employee_id) or str(emp.get("custom_id", "")) == str(employee_id):
-            employee = emp
-            break
-            
-    if not employee:
-        return jsonify({"error": "Employee not found"}), 404
-        
-    # Get the most recent punch for this employee
-    employee_punches = [p for p in TIME_CLOCK_DATA["punches"] if p["employee_id"] == employee["id"]]
-    employee_punches.sort(key=lambda x: x["timestamp"], reverse=True)
-    
-    current_status = "out"
-    last_punch = None
-    
-    if employee_punches:
-        last_punch = employee_punches[0]
-        current_status = last_punch["type"]
-        
-    return jsonify({
-        "employee": employee,
-        "status": current_status,
-        "last_punch": last_punch
-    })
-
-@app.route("/api/timeclock/report", methods=["GET"])
-def get_timeclock_report():
-    # Optional filter parameters
-    employee_id = request.args.get("employee_id")
-    start_date = request.args.get("start_date")
-    end_date = request.args.get("end_date")
-    
-    # Filter punches based on parameters
-    filtered_punches = TIME_CLOCK_DATA["punches"]
-    
-    if employee_id:
-        filtered_punches = [p for p in filtered_punches if str(p["employee_id"]) == str(employee_id)]
-        
-    # Additional filtering by date would be implemented here
-    
-    # Group punches by employee
-    report = {}
-    for punch in filtered_punches:
-        emp_id = punch["employee_id"]
-        if emp_id not in report:
-            employee = next((e for e in EMPLOYEES if e["id"] == emp_id), None)
-            report[emp_id] = {
-                "employee": employee,
-                "punches": []
-            }
-        report[emp_id]["punches"].append(punch)
-    
-    return jsonify({
-        "report": list(report.values())
-    })
-
-# -------------------------
-# Run the App
-# -------------------------
-if __name__ == "__main__":
-    app.run(debug=True)
+if __name__ == '__main__':
+  app.run(debug=True)
 

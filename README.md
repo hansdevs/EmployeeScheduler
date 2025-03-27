@@ -13,6 +13,11 @@
 
 ## 🚀 Phase 2: Expected completion: April 15th
 
+### Bugs
+
+- data not working for employee clock in clock out
+
+
 ### Upcoming Features:
 - Secure account creation
 - Revamped user interface (UI)
