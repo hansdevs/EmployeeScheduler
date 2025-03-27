@@ -24,6 +24,7 @@
 - ✅ React added  
 - ✅ Bootstrap added  
 - Custom Employee IDs  
+- Website Pages Overhaul
 
 ---
 
