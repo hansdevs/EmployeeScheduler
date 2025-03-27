@@ -20,11 +20,11 @@
 
 ### Upcoming Features:
 - Secure account creation
-✅ Revamped user interface (UI)
+- ✅ Revamped user interface (UI)
 - Stations will no longer be required
 - Basic clock-in functionality
-✅ React added
-✅ Bootstrap added
+- ✅ React added
+- ✅ Bootstrap added
 
 ---
 
