@@ -1,6 +1,6 @@
 {
   "settings": {
-    "enforce_schedule": false,
+    "enforce_schedule": true,
     "allow_remote_punch": false,
     "require_photo": false
   },
