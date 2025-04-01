@@ -2,16 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>The Scheduler - Landing Page</title>
-  <!-- Use an absolute path to your CSS (assuming it's in /static/styles/pages.css) -->
+  <title>The Scheduler - Workforce Management Solution</title>
   <link rel="stylesheet" href="/styles/pages.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 </head>
 <body>
   <header class="header">
     <nav class="navbar">
       <div class="logo">The Scheduler</div>
       <div class="nav-actions">
-        <!-- Link to About Us page using /pages/about.html -->
         <a href="/pages/about.html" class="nav-link">About Us</a>
         <a href="/pages/plans.html" class="nav-link">Plans</a>
         <button id="themeToggle" class="dark-mode-toggle">Toggle Dark Mode</button>
@@ -19,47 +18,203 @@
     </nav>
   </header>
 
-  <main class="hero">
-    <h1 class="hero-title">A Simpler Way to Manage Your Workforce</h1>
-    <p class="hero-subtitle">
-      Create shifts, track time, and streamline your team's schedule all in one place.
-    </p>
-    <!-- Link to getstarted.html under /pages/ -->
-    <a href="/pages/getstarted.html" class="cta-button">Get Started</a>
+  <main>
+    <section class="hero">
+      <div class="hero-content">
+        <h1 class="hero-title">A Simpler Way to Manage Your Workforce</h1>
+        <p class="hero-subtitle">
+          Create shifts, track time, and streamline your team's schedule all in one place. 
+          Trusted by over 5,000 businesses worldwide.
+        </p>
+        <div class="hero-buttons">
+          <a href="/pages/getstarted.html" class="cta-button">Get Started Free</a>
+          <a href="/pages/plans.html" class="secondary-cta">View Pricing</a>
+        </div>
+      </div>
+    </section>
+    
+    <section class="trusted-by">
+      <h3 class="trusted-title">TRUSTED BY BUSINESSES OF ALL SIZES</h3>
+      <div class="trusted-logos">
+        <div class="trusted-logo">ACME Corp</div>
+        <div class="trusted-logo">GlobalTech</div>
+        <div class="trusted-logo">Innovate Inc</div>
+        <div class="trusted-logo">FutureSystems</div>
+        <div class="trusted-logo">PrimeSolutions</div>
+      </div>
+    </section>
+
+    <section class="features-section">
+      <h2 class="section-title">Powerful Features for Modern Businesses</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="bi bi-clock-history"></i>
+          </div>
+          <h3 class="feature-title">24-Hour Clock View</h3>
+          <p class="feature-desc">Visually schedule employees in an intuitive daily interface that makes shift planning effortless.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="bi bi-fingerprint"></i>
+          </div>
+          <h3 class="feature-title">Punch-Clock System</h3>
+          <p class="feature-desc">Integrate real-time clock-ins/outs, breaks, and late flags with automated notifications.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="bi bi-shield-lock"></i>
+          </div>
+          <h3 class="feature-title">Role-Based Access</h3>
+          <p class="feature-desc">Admins, managers, and employees — all managed from one platform with customizable permissions.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="bi bi-calendar-check"></i>
+          </div>
+          <h3 class="feature-title">Custom Break Policies</h3>
+          <p class="feature-desc">Easily configure paid/unpaid breaks in minutes to comply with labor regulations.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="bi bi-diagram-3"></i>
+          </div>
+          <h3 class="feature-title">Department Management</h3>
+          <p class="feature-desc">Organize employees into different departments or teams for better workforce coordination.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="bi bi-graph-up"></i>
+          </div>
+          <h3 class="feature-title">Reporting & Analytics</h3>
+          <p class="feature-desc">Quickly export data or view real-time labor costs to make informed business decisions.</p>
+        </div>
+      </div>
+    </section>
+    
+    <section class="stats-section">
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-number">5,000+</div>
+          <div class="stat-label">Businesses</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">250,000+</div>
+          <div class="stat-label">Employees Managed</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">99.9%</div>
+          <div class="stat-label">Uptime</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">24/7</div>
+          <div class="stat-label">Customer Support</div>
+        </div>
+      </div>
+    </section>
+    
+    <section class="testimonials">
+      <h2 class="section-title">What Our Customers Say</h2>
+      <div class="testimonial-grid">
+        <div class="testimonial-card">
+          <p class="testimonial-text">"The Scheduler has transformed how we manage our retail staff. We've reduced scheduling conflicts by 85% and saved countless hours each week."</p>
+          <div class="testimonial-author">
+            <div class="author-avatar">JD</div>
+            <div class="author-info">
+              <h4>Jane Doe</h4>
+              <p>Operations Manager, Retail Chain</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="testimonial-card">
+          <p class="testimonial-text">"As a restaurant owner, I needed something flexible that could handle our complex scheduling needs. The Scheduler delivered beyond my expectations."</p>
+          <div class="testimonial-author">
+            <div class="author-avatar">JS</div>
+            <div class="author-info">
+              <h4>John Smith</h4>
+              <p>Owner, Fine Dining Restaurant</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="testimonial-card">
+          <p class="testimonial-text">"The time clock integration and reporting features have helped us optimize our labor costs while ensuring compliance with break regulations."</p>
+          <div class="testimonial-author">
+            <div class="author-avatar">MC</div>
+            <div class="author-info">
+              <h4>Maria Chen</h4>
+              <p>HR Director, Healthcare Provider</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <section class="cta-section">
+      <h2 class="cta-title">Ready to Simplify Your Workforce Management?</h2>
+      <p class="cta-subtitle">Join thousands of businesses that trust The Scheduler to optimize their operations.</p>
+      <a href="/pages/getstarted.html" class="cta-button">Start Your Free Trial</a>
+    </section>
   </main>
 
-  <section class="features">
-    <div class="feature-card">
-      <h2>24-Hour Clock View</h2>
-      <p>Visually schedule employees in an intuitive daily interface.</p>
-    </div>
-    <div class="feature-card">
-      <h2>Punch-Clock System</h2>
-      <p>Integrate real-time clock-ins/outs, breaks, and late flags.</p>
-    </div>
-    <div class="feature-card">
-      <h2>Role-Based Access</h2>
-      <p>Admins, managers, and employees — all managed from one platform.</p>
-    </div>
-  </section>
-
-  <section class="features">
-    <div class="feature-card">
-      <h2>Custom Break Policies</h2>
-      <p>Easily configure paid/unpaid breaks in minutes.</p>
-    </div>
-    <div class="feature-card">
-      <h2>Department Management</h2>
-      <p>Organize employees into different departments or teams.</p>
-    </div>
-    <div class="feature-card">
-      <h2>Reporting & Analytics</h2>
-      <p>Quickly export data or view real-time labor costs.</p>
-    </div>
-  </section>
-
   <footer class="footer">
-    <p>&copy; 2025 The Scheduler. All rights reserved.</p>
+    <div class="footer-grid">
+      <div class="footer-column">
+        <h3>Product</h3>
+        <ul>
+          <li><a href="#">Features</a></li>
+          <li><a href="/pages/plans.html">Pricing</a></li>
+          <li><a href="#">Integrations</a></li>
+          <li><a href="#">Enterprise</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-column">
+        <h3>Resources</h3>
+        <ul>
+          <li><a href="#">Documentation</a></li>
+          <li><a href="#">Guides</a></li>
+          <li><a href="#">API Reference</a></li>
+          <li><a href="#">Community</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-column">
+        <h3>Company</h3>
+        <ul>
+          <li><a href="/pages/about.html">About Us</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-column">
+        <h3>Legal</h3>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="#">Security</a></li>
+          <li><a href="#">Compliance</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="footer-bottom">
+      <p>&copy; 2025 The Scheduler. All rights reserved.</p>
+      <div class="social-links">
+        <a href="#" class="social-link"><i class="bi bi-twitter"></i></a>
+        <a href="#" class="social-link"><i class="bi bi-linkedin"></i></a>
+        <a href="#" class="social-link"><i class="bi bi-facebook"></i></a>
+        <a href="#" class="social-link"><i class="bi bi-instagram"></i></a>
+      </div>
+    </div>
   </footer>
 
   <script>
@@ -104,3 +259,4 @@
   </script>
 </body>
 </html>
+
