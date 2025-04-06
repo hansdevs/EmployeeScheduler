@@ -1,0 +1,17 @@
+[
+  {
+    "employee_id": 1,
+    "employee_name": "Hans",
+    "timestamp": "2025-04-05T21:37:45.973218",
+    "type": "in",
+    "color": "block-blue"
+  },
+  {
+    "employee_id": 1,
+    "employee_name": "Hans",
+    "timestamp": "2025-04-05T21:38:15.915503",
+    "type": "out",
+    "color": "block-blue",
+    "duration_minutes": 0
+  }
+]

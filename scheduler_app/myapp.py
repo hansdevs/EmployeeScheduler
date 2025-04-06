@@ -1,514 +1,357 @@
-from flask import Flask, request, jsonify, send_from_directory
-import json
+# Add these imports at the top of your myapp.py file
 import os
+import json
 import datetime
+from flask import Flask, request, jsonify, send_from_directory, redirect, url_for, session
 
-# Initialize Flask app
-app = Flask(__name__, static_folder='static')
+app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'dev_key_for_testing')
 
-# Get the path to the data directory
-data_dir = os.path.join(os.path.dirname(__file__), 'data')
+# File paths for data storage
+EMPLOYEES_FILE = 'data/employees.json'
+TIMECLOCK_FILE = 'data/timeclock.json'
+TIMECLOCK_LOGS_FILE = 'data/timeclock_logs.json'
 
-# Global variable to store employees
-EMPLOYEES = []
+# Ensure data directory exists
+os.makedirs('data', exist_ok=True)
 
-# Load employees from data source
-def load_employees():
-  global EMPLOYEES
-  try:
-      # Try to load from employees.json if it exists
-      employees_file = os.path.join(data_dir, 'employees.json')
-      if os.path.exists(employees_file):
-          with open(employees_file, 'r') as f:
-              EMPLOYEES = json.load(f)
-      else:
-          # Initialize with empty list if file doesn't exist
-          EMPLOYEES = []
-  except Exception as e:
-      print(f"Error loading employees: {e}")
-      EMPLOYEES = []
-  return EMPLOYEES
+# Helper function to load JSON data
+def load_json(file_path, default=None):
+    if default is None:
+        default = []
+    try:
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as f:
+                return json.load(f)
+        else:
+            # Create the file with default data if it doesn't exist
+            with open(file_path, 'w') as f:
+                json.dump(default, f)
+            return default
+    except Exception as e:
+        print(f"Error loading {file_path}: {e}")
+        return default
 
-# Save employees to data source
-def save_employees():
-  try:
-      employees_file = os.path.join(data_dir, 'employees.json')
-      with open(employees_file, 'w') as f:
-          json.dump(EMPLOYEES, f, indent=2)
-  except Exception as e:
-      print(f"Error saving employees: {e}")
+# Helper function to save JSON data
+def save_json(file_path, data):
+    try:
+        with open(file_path, 'w') as f:
+            json.dump(data, f, indent=2)
+        return True
+    except Exception as e:
+        print(f"Error saving to {file_path}: {e}")
+        return False
 
-# Function to get employees - can be imported by timeclock.py
-def get_employees():
-  global EMPLOYEES
-  if not EMPLOYEES:
-      load_employees()
-  return EMPLOYEES  # Return the actual list, not a Response
-
-# Routes for static files
-@app.route('/')
-def index():
-  return send_from_directory(app.static_folder, 'pages/index.html')
-
+# Serve static files
 @app.route('/pages/<path:path>')
 def serve_pages(path):
-  return send_from_directory(os.path.join(app.static_folder, 'pages'), path)
-
-@app.route('/js/<path:path>')
-def serve_js(path):
-  return send_from_directory(os.path.join(app.static_folder, 'js'), path)
+    return send_from_directory('static/pages', path)
 
 @app.route('/styles/<path:path>')
 def serve_styles(path):
-  return send_from_directory(os.path.join(app.static_folder, 'styles'), path)
+    return send_from_directory('static/styles', path)
+
+@app.route('/js/<path:path>')
+def serve_js(path):
+    return send_from_directory('static/js', path)
 
 @app.route('/images/<path:path>')
 def serve_images(path):
-  return send_from_directory(os.path.join(app.static_folder, 'images'), path)
+    return send_from_directory('static/images', path)
 
-# API Routes
-@app.route('/api/employees', methods=['GET'])
-def get_all_employees():
-  employees = get_employees()
-  return jsonify(employees)
+# Default route
+@app.route('/')
+def index():
+    return redirect('/pages/welcome.html')
 
-@app.route('/api/employees', methods=['POST'])
-def add_employee():
-  try:
-      data = request.get_json(force=True)
-      print("==== EMPLOYEE CREATION REQUEST ====")
-      print(f"Request method: {request.method}")
-      print(f"Request headers: {request.headers}")
-      print(f"Raw request data: {request.data.decode('utf-8')}")
-      print(f"Parsed JSON data (force=True): {data}")
-      
-      name = data.get('name', '').strip()
-      type_val = data.get('type', '').strip()
-      color = data.get('color', 'block-blue')
-      custom_id = data.get('custom_id')
-      
-      if custom_id:
-          custom_id = str(custom_id).strip()
-      
-      print(f"Parsed data: name={name}, type={type_val}, color={color}, custom_id={custom_id}")
-      
-      if not name:
-          return jsonify({"error": "Employee name is required"}), 400
-      
-      # Check if custom_id is already in use
-      employees = get_employees()
-      if custom_id and any(emp.get('custom_id') == custom_id for emp in employees):
-          return jsonify({"error": "This ID/Punch Code is already in use"}), 400
-      
-      # Generate a new ID (max existing ID + 1)
-      new_id = 1
-      if employees:
-          new_id = max(emp.get('id', 0) for emp in employees) + 1
-      
-      # Create new employee
-      new_employee = {
-          'id': new_id,
-          'name': name,
-          'type': type_val,
-          'color': color,
-          'custom_id': custom_id
-      }
-      
-      print(f"Adding new employee: {new_employee}")
-      
-      # Add to global list
-      employees.append(new_employee)
-      
-      # Save to file
-      save_employees()
-      
-      print(f"Current employees: {employees}")
-      
-      return jsonify(new_employee)
-  except Exception as e:
-      print(f"Error adding employee: {e}")
-      return jsonify({"error": str(e)}), 500
+# API Routes for Employees
+@app.route('/api/employees', methods=['GET', 'POST'])
+def handle_employees():
+    if request.method == 'GET':
+        employees = load_json(EMPLOYEES_FILE, [])
+        return jsonify(employees)
+    
+    elif request.method == 'POST':
+        employees = load_json(EMPLOYEES_FILE, [])
+        new_employee = request.json
+        
+        # Generate a new ID if not provided
+        if 'id' not in new_employee:
+            new_id = 1
+            if employees:
+                new_id = max(emp['id'] for emp in employees) + 1
+            new_employee['id'] = new_id
+        
+        employees.append(new_employee)
+        save_json(EMPLOYEES_FILE, employees)
+        return jsonify(new_employee), 201
 
-@app.route('/api/employees/<int:employee_id>', methods=['PUT'])
-def update_employee(employee_id):
-  try:
-      data = request.get_json(force=True)
-      
-      name = data.get('name', '').strip()
-      type_val = data.get('type', '').strip()
-      custom_id = data.get('custom_id')
-      
-      if custom_id:
-          custom_id = str(custom_id).strip()
-      
-      if not name:
-          return jsonify({"error": "Employee name is required"}), 400
-      
-      # Check if custom_id is already in use by another employee
-      employees = get_employees()
-      if custom_id and any(emp.get('custom_id') == custom_id and emp.get('id') != employee_id for emp in employees):
-          return jsonify({"error": "This ID/Punch Code is already in use by another employee"}), 400
-      
-      # Find and update employee
-      for emp in employees:
-          if emp.get('id') == employee_id:
-              emp['name'] = name
-              emp['type'] = type_val
-              emp['custom_id'] = custom_id
-              
-              # Save to file
-              save_employees()
-              
-              return jsonify(emp)
-      
-      return jsonify({"error": "Employee not found"}), 404
-  except Exception as e:
-      print(f"Error updating employee: {e}")
-      return jsonify({"error": str(e)}), 500
+@app.route('/api/employees/<int:employee_id>', methods=['GET', 'PUT', 'DELETE'])
+def handle_employee(employee_id):
+    employees = load_json(EMPLOYEES_FILE, [])
+    
+    # Find the employee
+    employee_index = None
+    for i, emp in enumerate(employees):
+        if emp['id'] == employee_id:
+            employee_index = i
+            break
+    
+    if employee_index is None:
+        return jsonify({"error": "Employee not found"}), 404
+    
+    if request.method == 'GET':
+        return jsonify(employees[employee_index])
+    
+    elif request.method == 'PUT':
+        update_data = request.json
+        # Update only the fields provided
+        for key, value in update_data.items():
+            employees[employee_index][key] = value
+        save_json(EMPLOYEES_FILE, employees)
+        return jsonify(employees[employee_index])
+    
+    elif request.method == 'DELETE':
+        deleted_employee = employees.pop(employee_index)
+        save_json(EMPLOYEES_FILE, employees)
+        return jsonify(deleted_employee)
 
-@app.route('/api/employees/<int:employee_id>', methods=['DELETE'])
-def delete_employee(employee_id):
-  try:
-      employees = get_employees()
-      
-      # Find employee index
-      index = None
-      for i, emp in enumerate(employees):
-          if emp.get('id') == employee_id:
-              index = i
-              break
-      
-      if index is not None:
-          # Remove employee
-          removed = employees.pop(index)
-          
-          # Save to file
-          save_employees()
-          
-          return jsonify({"success": True, "removed": removed})
-      
-      return jsonify({"error": "Employee not found"}), 404
-  except Exception as e:
-      print(f"Error deleting employee: {e}")
-      return jsonify({"error": str(e)}), 500
+# Time Clock API Routes
+@app.route('/api/timeclock/status', methods=['GET'])
+def get_timeclock_status():
+    """Get the current status of all employees (clocked in or out)"""
+    timeclock_data = load_json(TIMECLOCK_FILE, {"employees": {}})
+    return jsonify(timeclock_data)
 
-# Business routes
-@app.route('/api/business', methods=['GET'])
-def get_business_info():
-  try:
-      business_file = os.path.join(data_dir, 'business.json')
-      if os.path.exists(business_file):
-          with open(business_file, 'r') as f:
-              business_data = json.load(f)
-      else:
-          # Default business info
-          business_data = {
-              "name": "Unnamed Business",
-              "industry": "",
-              "hours": {
-                  "0": {"open": 9, "close": 17},  # Monday
-                  "1": {"open": 9, "close": 17},  # Tuesday
-                  "2": {"open": 9, "close": 17},  # Wednesday
-                  "3": {"open": 9, "close": 17},  # Thursday
-                  "4": {"open": 9, "close": 17},  # Friday
-                  "5": {"open": 10, "close": 15},  # Saturday
-                  "6": {"open": 0, "close": 0}    # Sunday (closed)
-              }
-          }
-      
-      return jsonify(business_data)
-  except Exception as e:
-      print(f"Error getting business info: {e}")
-      return jsonify({"error": str(e)}), 500
+@app.route('/api/timeclock/status/<int:employee_id>', methods=['GET'])
+def get_employee_timeclock_status(employee_id):
+    """Get the current status of a specific employee"""
+    timeclock_data = load_json(TIMECLOCK_FILE, {"employees": {}})
+    employee_status = timeclock_data["employees"].get(str(employee_id), {"status": "out", "last_punch": None})
+    return jsonify(employee_status)
 
-@app.route('/api/business', methods=['POST'])
-def update_business_info():
-  try:
-      data = request.get_json(force=True)
-      
-      # Validate required fields
-      name = data.get('name', '').strip()
-      if not name:
-          return jsonify({"error": "Business name is required"}), 400
-      
-      # Create business data object
-      business_data = {
-          "name": name,
-          "industry": data.get('industry', '').strip(),
-          "hours": data.get('hours', {})
-      }
-      
-      # Save to file
-      business_file = os.path.join(data_dir, 'business.json')
-      with open(business_file, 'w') as f:
-          json.dump(business_data, f, indent=2)
-      
-      return jsonify({"success": True, "business": business_data})
-  except Exception as e:
-      print(f"Error updating business info: {e}")
-      return jsonify({"error": str(e)}), 500
+@app.route('/api/timeclock/punch', methods=['POST'])
+def punch_timeclock():
+    """Record a punch (in or out) for an employee"""
+    data = request.json
+    employee_id = data.get('employee_id')
+    
+    if not employee_id:
+        return jsonify({"error": "Employee ID is required"}), 400
+    
+    # Convert to string for JSON dictionary keys
+    employee_id_str = str(employee_id)
+    
+    # Load current timeclock data
+    timeclock_data = load_json(TIMECLOCK_FILE, {"employees": {}})
+    
+    # Load employee data to get name and other details
+    employees = load_json(EMPLOYEES_FILE, [])
+    employee = next((emp for emp in employees if emp['id'] == employee_id), None)
+    
+    if not employee:
+        return jsonify({"error": f"Employee with ID {employee_id} not found"}), 404
+    
+    # Get current timestamp
+    timestamp = datetime.datetime.now().isoformat()
+    
+    # Determine if this is a punch in or out
+    current_status = timeclock_data["employees"].get(employee_id_str, {"status": "out"})
+    new_status = "out" if current_status.get("status") == "in" else "in"
+    
+    # Update the employee's status
+    timeclock_data["employees"][employee_id_str] = {
+        "status": new_status,
+        "last_punch": timestamp,
+        "name": employee.get("name", f"Employee {employee_id}"),
+        "color": employee.get("color", "block-blue")
+    }
+    
+    # Save the updated timeclock data
+    save_json(TIMECLOCK_FILE, timeclock_data)
+    
+    # Record this punch in the logs
+    timeclock_logs = load_json(TIMECLOCK_LOGS_FILE, [])
+    
+    punch_log = {
+        "employee_id": employee_id,
+        "employee_name": employee.get("name", f"Employee {employee_id}"),
+        "timestamp": timestamp,
+        "type": new_status,
+        "color": employee.get("color", "block-blue")
+    }
+    
+    # If this is a punch out, calculate duration from last punch in
+    if new_status == "out":
+        # Find the most recent punch in for this employee
+        for log in reversed(timeclock_logs):
+            if log["employee_id"] == employee_id and log["type"] == "in":
+                # Calculate duration
+                punch_in_time = datetime.datetime.fromisoformat(log["timestamp"])
+                punch_out_time = datetime.datetime.fromisoformat(timestamp)
+                duration_seconds = (punch_out_time - punch_in_time).total_seconds()
+                duration_minutes = round(duration_seconds / 60)
+                
+                # Add duration to the log
+                punch_log["duration_minutes"] = duration_minutes
+                break
+    
+    timeclock_logs.append(punch_log)
+    save_json(TIMECLOCK_LOGS_FILE, timeclock_logs)
+    
+    return jsonify({
+        "success": True,
+        "employee": employee,
+        "punch": {
+            "type": new_status,
+            "timestamp": timestamp
+        }
+    })
 
-# Stations routes
-@app.route('/api/stations', methods=['GET'])
-def get_stations():
-  try:
-      stations_file = os.path.join(data_dir, 'stations.json')
-      if os.path.exists(stations_file):
-          with open(stations_file, 'r') as f:
-              stations = json.load(f)
-      else:
-          stations = []
-      
-      return jsonify(stations)
-  except Exception as e:
-      print(f"Error getting stations: {e}")
-      return jsonify({"error": str(e)}), 500
+@app.route('/api/timeclock/activity', methods=['GET'])
+def get_timeclock_activity():
+    """Get recent timeclock activity"""
+    # Load the timeclock logs
+    timeclock_logs = load_json(TIMECLOCK_LOGS_FILE, [])
+    
+    # Sort by timestamp (newest first) and limit to 20 entries
+    recent_activity = sorted(timeclock_logs, key=lambda x: x["timestamp"], reverse=True)[:20]
+    
+    return jsonify({"activity": recent_activity})
 
-@app.route('/api/stations', methods=['POST'])
-def add_station():
-  try:
-      data = request.get_json(force=True)
-      
-      # Validate required fields
-      name = data.get('name', '').strip()
-      if not name:
-          return jsonify({"error": "Station name is required"}), 400
-      
-      # Load existing stations
-      stations_file = os.path.join(data_dir, 'stations.json')
-      if os.path.exists(stations_file):
-          with open(stations_file, 'r') as f:
-              stations = json.load(f)
-      else:
-          stations = []
-      
-      # Generate a new ID (max existing ID + 1)
-      new_id = 1
-      if stations:
-          new_id = max(st.get('id', 0) for st in stations) + 1
-      
-      # Create new station
-      new_station = {
-          'id': new_id,
-          'name': name,
-          'type': data.get('type', '').strip()
-      }
-      
-      # Add to list
-      stations.append(new_station)
-      
-      # Save to file
-      with open(stations_file, 'w') as f:
-          json.dump(stations, f, indent=2)
-      
-      return jsonify(new_station)
-  except Exception as e:
-      print(f"Error adding station: {e}")
-      return jsonify({"error": str(e)}), 500
+@app.route('/api/timeclock/clocked-in', methods=['GET'])
+def get_clocked_in_employees():
+    """Get a list of currently clocked in employees"""
+    timeclock_data = load_json(TIMECLOCK_FILE, {"employees": {}})
+    
+    clocked_in = []
+    for emp_id, status in timeclock_data["employees"].items():
+        if status["status"] == "in":
+            clocked_in.append({
+                "id": int(emp_id),
+                "name": status.get("name", f"Employee {emp_id}"),
+                "punch_time": status.get("last_punch"),
+                "color": status.get("color", "block-blue")
+            })
+    
+    return jsonify({"employees": clocked_in})
 
-# Schedule routes
-@app.route('/api/schedule', methods=['GET'])
-def get_schedule():
-  try:
-      # Load schedule data
-      schedule_file = os.path.join(data_dir, 'schedule.json')
-      if os.path.exists(schedule_file):
-          with open(schedule_file, 'r') as f:
-              schedule_data = json.load(f)
-      else:
-          schedule_data = {
-              "schedule": [],
-              "is_published": False
-          }
-      
-      # Load business info
-      business_file = os.path.join(data_dir, 'business.json')
-      if os.path.exists(business_file):
-          with open(business_file, 'r') as f:
-              business_data = json.load(f)
-      else:
-          business_data = {
-              "name": "Unnamed Business",
-              "industry": "",
-              "hours": {}
-          }
-      
-      # Load employees
-      employees = get_employees()
-      
-      # Load stations
-      stations_file = os.path.join(data_dir, 'stations.json')
-      if os.path.exists(stations_file):
-          with open(stations_file, 'r') as f:
-              stations = json.load(f)
-      else:
-          stations = []
-      
-      # Combine all data
-      response_data = {
-          "schedule": schedule_data.get("schedule", []),
-          "is_published": schedule_data.get("is_published", False),
-          "business": business_data,
-          "employees": employees,
-          "stations": stations
-      }
-      
-      return jsonify(response_data)
-  except Exception as e:
-      print(f"Error getting schedule: {e}")
-      return jsonify({"error": str(e)}), 500
-
-@app.route('/api/schedule', methods=['POST'])
-def update_schedule():
-  try:
-      data = request.get_json(force=True)
-      
-      # Get shifts and action
-      shifts = data.get('shifts', [])
-      action = data.get('action', 'draft')  # 'draft' or 'publish'
-      
-      # Create schedule data
-      schedule_data = {
-          "schedule": shifts,
-          "is_published": action == 'publish',
-          "last_updated": datetime.datetime.now().isoformat()
-      }
-      
-      # Save to file
-      schedule_file = os.path.join(data_dir, 'schedule.json')
-      with open(schedule_file, 'w') as f:
-          json.dump(schedule_data, f, indent=2)
-      
-      return jsonify({
-          "status": "published" if action == 'publish' else "draft",
-          "message": "Schedule has been " + ("published" if action == 'publish' else "saved as draft")
-      })
-  except Exception as e:
-      print(f"Error updating schedule: {e}")
-      return jsonify({"error": str(e)}), 500
-
-@app.route('/api/official_schedule', methods=['GET'])
-def get_official_schedule():
-  try:
-      # Load schedule data
-      schedule_file = os.path.join(data_dir, 'schedule.json')
-      if os.path.exists(schedule_file):
-          with open(schedule_file, 'r') as f:
-              schedule_data = json.load(f)
-      else:
-          schedule_data = {
-              "schedule": [],
-              "is_published": False
-          }
-      
-      # Check if schedule is published
-      if not schedule_data.get('is_published', False):
-          return jsonify({"error": "Schedule is not published"}), 400
-      
-      # Load business info
-      business_file = os.path.join(data_dir, 'business.json')
-      if os.path.exists(business_file):
-          with open(business_file, 'r') as f:
-              business_data = json.load(f)
-      else:
-          business_data = {
-              "name": "Unnamed Business",
-              "industry": "",
-              "hours": {}
-          }
-      
-      # Load employees
-      employees = get_employees()
-      
-      # Load stations
-      stations_file = os.path.join(data_dir, 'stations.json')
-      if os.path.exists(stations_file):
-          with open(stations_file, 'r') as f:
-              stations = json.load(f)
-      else:
-          stations = []
-      
-      # Combine all data
-      response_data = {
-          "schedule": schedule_data.get("schedule", []),
-          "is_published": True,
-          "business": business_data,
-          "employees": employees,
-          "stations": stations
-      }
-      
-      return jsonify(response_data)
-  except Exception as e:
-      print(f"Error getting official schedule: {e}")
-      return jsonify({"error": str(e)}), 500
-
-# User routes
-@app.route('/api/user', methods=['GET'])
-def get_user():
-  # For demo purposes, return a mock user
-  return jsonify({
-      "id": 1,
-      "name": "Demo User",
-      "email": "demo@example.com",
-      "role": "admin",
-      "theme": "light"
-  })
-
-@app.route('/api/theme', methods=['PUT'])
-def update_theme():
-  try:
-      data = request.get_json(force=True)
-      theme = data.get('theme', 'light')
-      
-      # In a real app, we would update the user's theme preference in a database
-      # For this demo, we'll just return success
-      
-      return jsonify({
-          "success": True,
-          "theme": theme
-      })
-  except Exception as e:
-      print(f"Error updating theme: {e}")
-      return jsonify({"error": str(e)}), 500
-
-# Fake auth routes for demo
-@app.route('/fake_signin', methods=['POST'])
-def fake_signin():
-  # Redirect to welcome page
-  return send_from_directory(app.static_folder, 'pages/welcome.html')
-
-@app.route('/fake_signup', methods=['POST'])
-def fake_signup():
-  # Redirect to welcome page
-  return send_from_directory(app.static_folder, 'pages/welcome.html')
-
-# Timeclock endpoint that uses the record_punch function from timeclock.py
-@app.route('/api/timeclock/punch_endpoint', methods=['POST'])
-def punch_endpoint():
+@app.route('/api/timeclock/report', methods=['GET'])
+def get_timeclock_report():
+    """Generate a report of employee hours"""
+    # Get date range from query parameters (default to last 7 days)
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    
     try:
-        from timeclock import record_punch
+        if start_date_str:
+            start_date = datetime.datetime.fromisoformat(start_date_str)
+        else:
+            # Default to 7 days ago
+            start_date = datetime.datetime.now() - datetime.timedelta(days=7)
+            
+        if end_date_str:
+            end_date = datetime.datetime.fromisoformat(end_date_str)
+        else:
+            # Default to now
+            end_date = datetime.datetime.now()
+    except ValueError:
+        return jsonify({"error": "Invalid date format. Use ISO format (YYYY-MM-DDTHH:MM:SS)"}), 400
+    
+    # Load the timeclock logs
+    timeclock_logs = load_json(TIMECLOCK_LOGS_FILE, [])
+    
+    # Filter logs by date range
+    filtered_logs = []
+    for log in timeclock_logs:
+        log_time = datetime.datetime.fromisoformat(log["timestamp"])
+        if start_date <= log_time <= end_date:
+            filtered_logs.append(log)
+    
+    # Group by employee and calculate total hours
+    employee_hours = {}
+    
+    # First, organize punch pairs (in/out)
+    for log in filtered_logs:
+        emp_id = log["employee_id"]
+        if emp_id not in employee_hours:
+            employee_hours[emp_id] = {
+                "name": log["employee_name"],
+                "total_minutes": 0,
+                "punches": []
+            }
         
-        data = request.get_json(force=True)
-        employee_id = data.get('employee_id')
-        punch_type = data.get('punch_type')  # Optional
-        timestamp = data.get('timestamp')    # Optional
-        photo_data = data.get('photo_data')  # Optional
+        employee_hours[emp_id]["punches"].append(log)
+    
+    # Calculate hours for each employee
+    for emp_id, data in employee_hours.items():
+        # Sort punches by timestamp
+        punches = sorted(data["punches"], key=lambda x: x["timestamp"])
         
-        result = record_punch(employee_id, timestamp, punch_type, photo_data)
+        # Process punch pairs
+        total_minutes = 0
+        punch_pairs = []
         
-        # Check if result is a tuple (response, status_code)
-        if isinstance(result, tuple) and len(result) == 2:
-            return jsonify(result[0]), result[1]
+        i = 0
+        while i < len(punches) - 1:
+            if punches[i]["type"] == "in" and punches[i+1]["type"] == "out":
+                # Calculate duration
+                in_time = datetime.datetime.fromisoformat(punches[i]["timestamp"])
+                out_time = datetime.datetime.fromisoformat(punches[i+1]["timestamp"])
+                duration_minutes = round((out_time - in_time).total_seconds() / 60)
+                
+                total_minutes += duration_minutes
+                
+                punch_pairs.append({
+                    "in": punches[i]["timestamp"],
+                    "out": punches[i+1]["timestamp"],
+                    "duration_minutes": duration_minutes
+                })
+                
+                i += 2  # Skip to next potential pair
+            else:
+                i += 1  # Skip unpaired punch
         
-        # Otherwise, it's just the response data
-        return jsonify(result)
-    except Exception as e:
-        print(f"Error in punch_endpoint: {e}")
-        return jsonify({"error": str(e)}), 500
+        employee_hours[emp_id]["total_minutes"] = total_minutes
+        employee_hours[emp_id]["punch_pairs"] = punch_pairs
+        employee_hours[emp_id]["hours"] = round(total_minutes / 60, 2)
+        
+        # Remove the raw punches from the response
+        del employee_hours[emp_id]["punches"]
+    
+    return jsonify({
+        "report": {
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
+            "employees": employee_hours
+        }
+    })
 
-# Load employees on startup
-load_employees()
+@app.route('/api/timeclock/settings', methods=['GET', 'POST'])
+def handle_timeclock_settings():
+    """Get or update timeclock settings"""
+    settings_file = 'data/timeclock_settings.json'
+    
+    if request.method == 'GET':
+        settings = load_json(settings_file, {
+            "enforce_schedule": True,
+            "allow_remote_punch": True,
+            "require_photo": False
+        })
+        return jsonify(settings)
+    
+    elif request.method == 'POST':
+        current_settings = load_json(settings_file, {})
+        new_settings = request.json
+        
+        # Update settings
+        for key, value in new_settings.items():
+            current_settings[key] = value
+        
+        save_json(settings_file, current_settings)
+        return jsonify(current_settings)
 
+# Run the app
 if __name__ == '__main__':
-  app.run(debug=True)
+    app.run(debug=True)
 

@@ -21,17 +21,17 @@ href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
 <!-- TOP NAV BAR -->
 <div class="navbar">
 <div class="container-fluid">
-<div class="d-flex align-items-center">
-  <strong class="text-white me-3">Scheduler Beta</strong>
-  <a href="/pages/index.html" class="text-white-50 me-3">Home</a>
-  <a href="/pages/schedule.html" class="text-white-50 me-3">Schedule</a>
-  <a href="/pages/business.html" class="text-white-50 me-3">Business</a>
-  <a href="/pages/employees.html" class="text-white-50 me-3">Employees</a>
-  <a href="/pages/stations.html" class="text-white-50 me-3">Stations</a>
-  <a href="/pages/official.html" class="text-white-50 me-3">Official&nbsp;Schedule</a>
-  <a href="/pages/timeclock.html" class="text-white me-3">Time&nbsp;Clock</a>
-</div>
-<div id="localTime" class="text-white-50 small"></div>
+  <div class="d-flex align-items-center">
+    <strong class="text-white me-3">Scheduler Beta</strong>
+    <a href="/pages/index.html" class="text-white-50 me-3">Home</a>
+    <a href="/pages/schedule.html" class="text-white-50 me-3">Schedule</a>
+    <a href="/pages/business.html" class="text-white-50 me-3">Business</a>
+    <a href="/pages/employees.html" class="text-white-50 me-3">Employees</a>
+    <a href="/pages/stations.html" class="text-white-50 me-3">Stations</a>
+    <a href="/pages/official.html" class="text-white-50 me-3">Official&nbsp;Schedule</a>
+    <a href="/pages/timeclock.html" class="text-white me-3">Time&nbsp;Clock</a>
+  </div>
+  <div id="localTime" class="text-white-50 small"></div>
 </div>
 </div>
 
@@ -117,6 +117,100 @@ href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
     </div>
   </div>
 </div>
+
+<!-- Manager Tools Section -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="punch-card">
+      <div class="punch-card-header">
+        <h3><i class="bi bi-tools me-2"></i>Manager Tools</h3>
+      </div>
+      <div class="punch-card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card mb-3">
+              <div class="card-header bg-primary text-white">
+                <i class="bi bi-file-earmark-text me-2"></i> Time Reports
+              </div>
+              <div class="card-body">
+                <p>Generate time reports for payroll and analysis:</p>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="input-group">
+                      <span class="input-group-text">From</span>
+                      <input type="date" id="reportStartDate" class="form-control">
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="input-group">
+                      <span class="input-group-text">To</span>
+                      <input type="date" id="reportEndDate" class="form-control">
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-3">
+                  <button class="btn btn-primary" onclick="generateManagerReport()">
+                    <i class="bi bi-graph-up me-2"></i> Generate Report
+                  </button>
+                  <button class="btn btn-outline-secondary ms-2" onclick="exportReportToCsv()">
+                    <i class="bi bi-file-earmark-excel me-2"></i> Export CSV
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header bg-success text-white">
+                <i class="bi bi-gear me-2"></i> Time Clock Settings
+              </div>
+              <div class="card-body">
+                <p>Configure how the time clock system works:</p>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="enforceSchedule" checked>
+                  <label class="form-check-label" for="enforceSchedule">
+                    Enforce scheduled hours (flag early/late punches)
+                  </label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="allowRemotePunch" checked>
+                  <label class="form-check-label" for="allowRemotePunch">
+                    Allow remote punch in/out
+                  </label>
+                </div>
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox" id="requirePhoto">
+                  <label class="form-check-label" for="requirePhoto">
+                    Require photo verification on punch
+                  </label>
+                </div>
+                <button class="btn btn-success" onclick="saveTimeclockSettings()">
+                  <i class="bi bi-save me-2"></i> Save Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Report Results Section (initially hidden) -->
+<div id="reportResultsSection" class="row mt-4 d-none">
+  <div class="col-12">
+    <div class="punch-card">
+      <div class="punch-card-header">
+        <h3><i class="bi bi-file-earmark-text me-2"></i>Report Results</h3>
+      </div>
+      <div class="punch-card-body">
+        <div id="reportResults"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 </div>
 </div>
 
@@ -140,289 +234,164 @@ setInterval(updateLocalTime, 1000);
 updateLocalTime();
 </script>
 
-<!-- Inline Time Clock JS (merged from timeclock.js) -->
+<!-- Manager Report Functions -->
 <script>
-// Global variable to store employee data
-let employeesData = []
+// Set default date range for reports (last 7 days)
+document.addEventListener('DOMContentLoaded', () => {
+  const today = new Date();
+  const lastWeek = new Date();
+  lastWeek.setDate(today.getDate() - 7);
+  
+  const reportEndDate = document.getElementById('reportEndDate');
+  const reportStartDate = document.getElementById('reportStartDate');
+  
+  if (reportEndDate && reportStartDate) {
+    reportEndDate.valueAsDate = today;
+    reportStartDate.valueAsDate = lastWeek;
+  }
+});
 
-// Update the current time display
-function updateTimeDisplay() {
-  const now = new Date()
-
-  // Format time as HH:MM:SS
-  const hours = String(now.getHours()).padStart(2, "0")
-  const minutes = String(now.getMinutes()).padStart(2, "0")
-  const seconds = String(now.getSeconds()).padStart(2, "0")
-  document.getElementById("currentTime").textContent = `${hours}:${minutes}:${seconds}`
-
-  // Format date as Day of Week, Month Day, Year
-  const options = { weekday: "long", year: "numeric", month: "long", day: "numeric" }
-  document.getElementById("currentDate").textContent = now.toLocaleDateString(undefined, options)
-}
-
-// Start the clock update interval
-function initClock() {
-  setInterval(updateTimeDisplay, 1000)
-  updateTimeDisplay()
-}
-
-// Keypad functions
-function appendToInput(value) {
-  const input = document.getElementById("punchIdInput")
-  input.value += value
-}
-
-function clearInput() {
-  document.getElementById("punchIdInput").value = ""
-}
-
-// Load employees data
-async function loadEmployees() {
+// Generate a report for managers
+async function generateManagerReport() {
+  const startDateInput = document.getElementById('reportStartDate');
+  const endDateInput = document.getElementById('reportEndDate');
+  
+  if (!startDateInput || !endDateInput || !startDateInput.value || !endDateInput.value) {
+    alert("Please select both start and end dates");
+    return;
+  }
+  
+  const startDate = new Date(startDateInput.value);
+  const endDate = new Date(endDateInput.value);
+  endDate.setHours(23, 59, 59); // Set to end of day
+  
+  if (startDate > endDate) {
+    alert("Start date must be before end date");
+    return;
+  }
+  
   try {
-    const response = await fetch("/api/employees")
+    // Show loading indicator
+    const reportResults = document.getElementById('reportResults');
+    reportResults.innerHTML = `
+      <div class="d-flex justify-content-center p-4">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    `;
+    
+    // Show the results section
+    document.getElementById('reportResultsSection').classList.remove('d-none');
+    
+    // Format query parameters
+    const params = new URLSearchParams();
+    params.append('start_date', startDate.toISOString());
+    params.append('end_date', endDate.toISOString());
+    
+    const response = await fetch(`/api/timeclock/report?${params.toString()}`);
+    
     if (!response.ok) {
-      throw new Error("Failed to load employees")
+      throw new Error("Failed to generate report");
     }
-
-    const data = await response.json()
-    employeesData = data // Store globally
-    console.log("Loaded employees:", employeesData)
-    return data
-  } catch (err) {
-    console.error("Error loading employees:", err)
-    return []
-  }
-}
-
-// Process punch in/out
-async function processPunch() {
-  const punchId = document.getElementById("punchIdInput").value.trim()
-  if (!punchId) {
-    showPunchStatus("Please enter your ID/Punch Code", "warning")
-    return
-  }
-
-  try {
-    console.log(`Attempting to punch with ID/Code: ${punchId}`)
-
-    // Reload employees to ensure we have the latest data
-    await loadEmployees()
-
-    // Find the employee by either custom_id or system id
-    let matchedEmployee = null
-
-    // First try to match by custom_id (string comparison)
-    matchedEmployee = employeesData.find((emp) => emp.custom_id === punchId)
-
-    // If not found, try to match by system id (numeric comparison)
-    if (!matchedEmployee) {
-      const numericId = Number.parseInt(punchId, 10)
-      if (!isNaN(numericId)) {
-        matchedEmployee = employeesData.find((emp) => emp.id === numericId)
-      }
-    }
-
-    if (!matchedEmployee) {
-      throw new Error(`No employee found with ID/Code: ${punchId}`)
-    }
-
-    console.log("Found employee:", matchedEmployee)
-
-    // Create a new employee record to send to the server
-    // This is a workaround for the backend data synchronization issue
-    const employeeToRegister = {
-      id: matchedEmployee.id,
-      name: matchedEmployee.name,
-      type: matchedEmployee.type,
-      color: matchedEmployee.color,
-      custom_id: matchedEmployee.custom_id,
-    }
-
-    // First, register/update the employee to ensure it's in the timeclock system
-    const registerResponse = await fetch("/api/timeclock/register-employee", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(employeeToRegister),
-    })
-
-    if (!registerResponse.ok) {
-      console.warn("Failed to register employee with timeclock system, attempting punch anyway")
+    
+    const data = await response.json();
+    
+    // Format the report
+    let reportHtml = `
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Time Clock Report</h5>
+          <p class="card-text">
+            <strong>Period:</strong> ${formatDate(startDate)} to ${formatDate(endDate)}
+          </p>
+        </div>
+      </div>
+    `;
+    
+    const employees = data.report.employees;
+    
+    if (Object.keys(employees).length === 0) {
+      reportHtml += `
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle-fill me-2"></i>
+          No time clock data found for the selected date range
+        </div>
+      `;
     } else {
-      console.log("Successfully registered employee with timeclock system")
-    }
-
-    // Now attempt the punch with the system ID
-    const response = await fetch("/api/timeclock/punch", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        employee_id: matchedEmployee.id,
-        timestamp: new Date().toISOString(),
-      }),
-    })
-
-    console.log(`Received response with status: ${response.status}`)
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.error || `Failed to process punch (status ${response.status})`)
-    }
-
-    const data = await response.json()
-    console.log(`Response data:`, data)
-
-    // Show success message
-    const punchType = data.punch.type === "in" ? "IN" : "OUT"
-    showPunchStatus(`${matchedEmployee.name} successfully punched ${punchType}!`, "success")
-
-    // Clear the input for the next punch
-    clearInput()
-
-    // Refresh the activity displays
-    loadRecentActivity()
-    loadClockedInEmployees()
-  } catch (error) {
-    console.error("Punch error:", error)
-    showPunchStatus(error.message || "Error processing punch. Please try again.", "danger")
-  }
-}
-
-function showPunchStatus(message, type) {
-  const statusDiv = document.getElementById("punchStatus")
-  statusDiv.className = `alert alert-${type} mt-3`
-  statusDiv.innerHTML = message
-  statusDiv.classList.remove("d-none")
-
-  // Clear the status after 5 seconds
-  setTimeout(() => {
-    statusDiv.classList.add("d-none")
-  }, 5000)
-}
-
-// Load recent activity
-async function loadRecentActivity() {
-  try {
-    const response = await fetch("/api/timeclock/activity")
-
-    if (!response.ok) {
-      throw new Error("Failed to load recent activity")
-    }
-
-    const data = await response.json()
-    const activityDiv = document.getElementById("recentActivity")
-
-    if (!data.activity || data.activity.length === 0) {
-      activityDiv.innerHTML = `
-        <div class="activity-empty">
-          <i class="bi bi-clock"></i>
-          <p>No recent activity</p>
+      reportHtml += `
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Total Hours</th>
+                <th>Punch Pairs</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      
+      for (const [empId, empData] of Object.entries(employees)) {
+        const punchPairsCount = empData.punch_pairs ? empData.punch_pairs.length : 0;
+        
+        reportHtml += `
+          <tr>
+            <td>${empData.name}</td>
+            <td>${empData.hours.toFixed(2)}</td>
+            <td>${punchPairsCount}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-primary" onclick="showEmployeeDetails(${empId})">
+                <i class="bi bi-eye me-1"></i> Details
+              </button>
+            </td>
+          </tr>
+        `;
+      }
+      
+      reportHtml += `
+            </tbody>
+          </table>
         </div>
-      `
-      return
+      `;
     }
-
-    let activityHtml = ""
-    data.activity.forEach((item) => {
-      const timestamp = new Date(item.timestamp)
-      const timeString = timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      const dateString = timestamp.toLocaleDateString([], { month: "short", day: "numeric" })
-
-      activityHtml += `
-        <div class="activity-item ${item.type === "in" ? "activity-in" : "activity-out"}">
-          <div class="activity-time">${timeString}<br><small>${dateString}</small></div>
-          <div class="activity-details">
-            <div class="activity-name">${item.employee_name}</div>
-            <div class="activity-type">Punched ${item.type.toUpperCase()}</div>
-          </div>
-        </div>
-      `
-    })
-
-    activityDiv.innerHTML = activityHtml
+    
+    reportResults.innerHTML = reportHtml;
+    
   } catch (error) {
-    console.error(error)
-    document.getElementById("recentActivity").innerHTML = `
+    console.error("Report generation error:", error);
+    const reportResults = document.getElementById('reportResults');
+    reportResults.innerHTML = `
       <div class="alert alert-danger">
         <i class="bi bi-exclamation-triangle-fill me-2"></i>
-        Error loading activity: ${error.message}
+        Error generating report: ${error.message}
       </div>
-    `
+    `;
+    
+    // Show the results section
+    document.getElementById('reportResultsSection').classList.remove('d-none');
   }
 }
 
-// Load currently clocked in employees
-async function loadClockedInEmployees() {
-  try {
-    const response = await fetch("/api/timeclock/clocked-in")
-
-    if (!response.ok) {
-      throw new Error("Failed to load clocked in employees")
-    }
-
-    const data = await response.json()
-    const clockedInDiv = document.getElementById("clockedInEmployees")
-
-    if (!data.employees || data.employees.length === 0) {
-      clockedInDiv.innerHTML = `
-        <div class="activity-empty">
-          <i class="bi bi-person-slash"></i>
-          <p>No employees currently clocked in</p>
-        </div>
-      `
-      return
-    }
-
-    let employeesHtml = ""
-    data.employees.forEach((emp) => {
-      const punchTime = new Date(emp.punch_time)
-      const timeString = punchTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-
-      employeesHtml += `
-        <div class="clocked-in-item">
-          <div class="employee-avatar ${emp.color || "block-blue"}">
-            ${emp.name.charAt(0).toUpperCase()}
-          </div>
-          <div class="employee-details">
-            <div class="employee-name">${emp.name}</div>
-            <div class="employee-time">Since ${timeString}</div>
-          </div>
-        </div>
-      `
-    })
-
-    clockedInDiv.innerHTML = employeesHtml
-  } catch (error) {
-    console.error(error)
-    document.getElementById("clockedInEmployees").innerHTML = `
-      <div class="alert alert-danger">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-        Error loading clocked in employees: ${error.message}
-      </div>
-    `
-  }
+// Export report to CSV
+function exportReportToCsv() {
+  alert("CSV export functionality will be implemented in a future update.");
 }
 
-// Initialize on page load
-document.addEventListener("DOMContentLoaded", async () => {
-  initClock()
-
-  // Load employees first to ensure we have the data
-  await loadEmployees()
-
-  loadRecentActivity()
-  loadClockedInEmployees()
-
-  // Focus the input field
-  document.getElementById("punchIdInput").focus()
-
-  // Add keyboard support for the punch input
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      processPunch()
-    }
-  })
-})
+// Helper function to format dates
+function formatDate(date) {
+  return date.toLocaleDateString(undefined, { 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric' 
+  });
+}
 </script>
+
+<!-- Time Clock JS -->
+<script src="/js/timeclock.js"></script>
+
 </body>
 </html>
 
