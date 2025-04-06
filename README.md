@@ -4,7 +4,7 @@
 
 - Basic employee scheduler with test features  
   - **Test User:** `test@gmail.com`  
-  - **Password:** `password`  
+  - **Password:** `test@gmail.com`  
 - Basic styling applied  
 - **Note:** Assigning employees to *stations* is required for scheduling  
 - Currently, new companies or custom configurations **cannot** be set up  
@@ -14,17 +14,20 @@
 ## 🚀 Phase 2: Expected Completion: April 15th
 
 ### 🐞 Bugs
-- ⏳ Clock-in/out data not saving or displaying correctly
+-**Test User:** `test@gmail.com` + `test@gmail.com`  *Removed*
+
+### 🔧 Patch
+- ✅ Clock-in/out data not saving or displaying correctly
 
 ### 🔧 Upcoming Features
 - Secure account creation  
 - ✅ Revamped User Interface (UI)  
-- Stations will no longer be required  
-- Basic Clock-In Functionality  
+- 🔧🔧Stations will no longer be required  
+- ✅ Basic Clock-In Functionality  
 - ✅ React added  
 - ✅ Bootstrap added  
-- Custom Employee IDs  
-- Website Pages Overhaul
+- ✅ Custom Employee IDs  
+- 🔧🔧Website Pages Overhaul
 
 ---
 
