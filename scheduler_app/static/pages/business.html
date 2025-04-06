@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
   
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/pages/schedule.css" />
+  <link rel="stylesheet" href="../pages/schedule.css" />
 </head>
 <body>
   <!-- TOP NAV BAR -->
@@ -23,13 +23,13 @@
     <div class="container-fluid">
       <div class="d-flex align-items-center">
         <strong class="text-white me-3">Scheduler Beta</strong>
-        <a href="/pages/index.html" class="text-white-50 me-3">Home</a>
-        <a href="/pages/schedule.html" class="text-white-50 me-3">Schedule</a>
-        <a href="/pages/business.html" class="text-white me-3">Business</a>
-        <a href="/pages/employees.html" class="text-white-50 me-3">Employees</a>
-        <a href="/pages/stations.html" class="text-white-50 me-3">Stations</a>
-        <a href="/pages/official.html" class="text-white-50 me-3">Official&nbsp;Schedule</a>
-        <a href="/pages/timeclock.html" class="text-white-50 me-3">Time&nbsp;Clock</a>
+        <a href="../pages/index.html" class="text-white-50 me-3">Home</a>
+        <a href="../pages/schedule.html" class="text-white-50 me-3">Schedule</a>
+        <a href="../pages/business.html" class="text-white me-3">Business</a>
+        <a href="../pages/employees.html" class="text-white-50 me-3">Employees</a>
+        <a href="../pages/stations.html" class="text-white-50 me-3">Stations</a>
+        <a href="../pages/official.html" class="text-white-50 me-3">Official&nbsp;Schedule</a>
+        <a href="../pages/timeclock.html" class="text-white-50 me-3">Time&nbsp;Clock</a>
       </div>
       <div id="localTime" class="text-white-50 small"></div>
     </div>
@@ -223,7 +223,23 @@
     }
 
     // Auto-load the business info on page load
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/user', { credentials: 'include' });
+        if (!res.ok) return;
+        
+        const user = await res.json();
+        
+        // If this is a new business with no name set yet, use the company name from registration
+        const bizNameInput = document.getElementById('bizName');
+        if (bizNameInput && bizNameInput.value === "Unnamed Business" && user.company_name) {
+          bizNameInput.value = user.company_name;
+        }
+      } catch (err) {
+        console.error('Failed to fetch user:', err);
+      }
+      
+      // Continue with loading business info
       fetchBusinessInfo();
     });
   </script>

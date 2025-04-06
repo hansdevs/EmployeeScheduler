@@ -8,25 +8,33 @@ import json
 from typing import Dict, List, Optional, Any
 
 # File paths for data storage
-STATIONS_FILE = 'data/stations.json'
-
-# Ensure data directory exists
-os.makedirs('data', exist_ok=True)
+def get_company_file_path(company_id):
+    """Get company-specific file path"""
+    return f'data/company_{company_id}/stations.json'
 
 class StationService:
-    def __init__(self):
+    def __init__(self, company_id=None):
         """Initialize the station service"""
-        pass
+        self.company_id = company_id
+        
+    def get_file_path(self):
+        """Get the file path for this company"""
+        if not self.company_id:
+            return 'data/stations.json'  # Default for backward compatibility
+        return get_company_file_path(self.company_id)
     
     def get_all_stations(self) -> List:
         """Get all stations"""
         try:
-            if os.path.exists(STATIONS_FILE):
-                with open(STATIONS_FILE, 'r') as f:
+            file_path = self.get_file_path()
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            
+            if os.path.exists(file_path):
+                with open(file_path, 'r') as f:
                     return json.load(f)
             else:
                 # Create empty stations file if it doesn't exist
-                with open(STATIONS_FILE, 'w') as f:
+                with open(file_path, 'w') as f:
                     json.dump([], f)
                 return []
         except Exception as e:
@@ -57,7 +65,8 @@ class StationService:
         stations.append(station_data)
         
         try:
-            with open(STATIONS_FILE, 'w') as f:
+            file_path = self.get_file_path()
+            with open(file_path, 'w') as f:
                 json.dump(stations, f, indent=2)
             return station_data
         except Exception as e:
@@ -83,7 +92,8 @@ class StationService:
             stations[station_index][key] = value
         
         try:
-            with open(STATIONS_FILE, 'w') as f:
+            file_path = self.get_file_path()
+            with open(file_path, 'w') as f:
                 json.dump(stations, f, indent=2)
             return stations[station_index]
         except Exception as e:
@@ -108,7 +118,8 @@ class StationService:
         deleted_station = stations.pop(station_index)
         
         try:
-            with open(STATIONS_FILE, 'w') as f:
+            file_path = self.get_file_path()
+            with open(file_path, 'w') as f:
                 json.dump(stations, f, indent=2)
             return deleted_station
         except Exception as e:

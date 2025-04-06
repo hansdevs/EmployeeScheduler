@@ -14,30 +14,32 @@
 ## 🚀 Phase 2: Expected Completion: April 15th
 
 ### 🐞 Bugs
--**Test User:** `test@gmail.com` + `test@gmail.com`  *Removed*
-
-### 🔧 Patch
-- ✅ Clock-in/out data not saving or displaying correctly
+_(To be updated as issues are found)_
 
 ### 🔧 Upcoming Features
 - Secure account creation  
 - ✅ Revamped User Interface (UI)  
-- 🔧🔧Stations will no longer be required  
+- ✅ Stations will no longer be required  
 - ✅ Basic Clock-In Functionality  
 - ✅ React added  
 - ✅ Bootstrap added  
 - ✅ Custom Employee IDs  
 - 🔧🔧Website Pages Overhaul
 
+### 🧩 Additional Features
+- ✅ **Time Clock History View** (for employees and admins to review punch-in/out history)  
+- ✅ Full Clock-In / Clock-Out System  (From Phase3 plan)
+- ✅ pull punch-in Data summaries
+
 ---
 
-## ⏸️ Phase 3: Expected Start April 20th
+## ⏸️ Phase 3: ***UPDATED*** Expected Start April ***15th***
 
 ### 🐞 Bugs  
 _(To be updated as issues are found)_
 
 ### 🔧 Planned Features
-- Full Clock-In / Clock-Out System  
+- ✅ Full Clock-In / Clock-Out System  
 - Admin and Manager Roles  
 - Custom Business Owner and Employee Profiles  
 - Role-Based Page Restrictions  
@@ -46,7 +48,6 @@ _(To be updated as issues are found)_
 - Extensive Testing Once Features Are Finalized  
 
 ### 🧩 Additional Features
-- **Time Clock History View** (for employees and admins to review punch-in/out history)  
 - **Edit Past Clock Entries** (admin-level correction tool)  
 - **Basic Schedule View** (per employee, per week—sets foundation for PDF export in Phase 4)  
 - **Shift Assignment UI** (drag-and-drop or dropdown-based assignment of shifts)  

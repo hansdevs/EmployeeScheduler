@@ -101,7 +101,7 @@ function clearInput() {
 // Load employees data
 async function loadEmployees() {
   try {
-    const response = await fetch("/api/employees")
+    const response = await fetch("../api/employees")
     if (!response.ok) {
       throw new Error("Failed to load employees")
     }
@@ -152,7 +152,7 @@ async function processPunch() {
     console.log("Found employee:", matchedEmployee)
 
     // Now attempt the punch with the system ID
-    const response = await fetch("/api/timeclock/punch", {
+    const response = await fetch("../api/timeclock/punch", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -251,7 +251,7 @@ function showError(message) {
 // Load recent activity
 async function loadRecentActivity() {
   try {
-    const response = await fetch("/api/timeclock/activity")
+    const response = await fetch("../api/timeclock/activity")
 
     if (!response.ok) {
       throw new Error("Failed to load recent activity")
@@ -315,7 +315,7 @@ async function loadRecentActivity() {
 // Load currently clocked in employees
 async function loadClockedInEmployees() {
   try {
-    const response = await fetch("/api/timeclock/clocked-in")
+    const response = await fetch("../api/timeclock/clocked-in")
 
     if (!response.ok) {
       throw new Error("Failed to load clocked in employees")
@@ -466,6 +466,7 @@ function showEmployeeDetails(employeeId) {
 
   // Show the modal
   const modalElement = document.getElementById("employeeDetailsModal")
+  // Declare bootstrap here
   const modal = new bootstrap.Modal(modalElement)
   modal.show()
 
@@ -477,7 +478,7 @@ function showEmployeeDetails(employeeId) {
 // Load employee current status
 async function loadEmployeeStatus(employeeId) {
   try {
-    const response = await fetch(`/api/timeclock/status/${employeeId}`)
+    const response = await fetch(`../api/timeclock/status/${employeeId}`)
 
     if (!response.ok) {
       throw new Error("Failed to load employee status")
@@ -541,7 +542,7 @@ async function loadEmployeeStatus(employeeId) {
 // Load employee recent activity
 async function loadEmployeeActivity(employeeId) {
   try {
-    const response = await fetch("/api/timeclock/activity")
+    const response = await fetch("../api/timeclock/activity")
 
     if (!response.ok) {
       throw new Error("Failed to load activity")
@@ -636,7 +637,7 @@ async function manualPunch(employeeId) {
     }
 
     // Perform the punch
-    const response = await fetch("/api/timeclock/punch", {
+    const response = await fetch("../api/timeclock/punch", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -681,7 +682,7 @@ async function generateReport(startDate, endDate) {
       params.append("end_date", endDate.toISOString())
     }
 
-    const response = await fetch(`/api/timeclock/report?${params.toString()}`)
+    const response = await fetch(`../api/timeclock/report?${params.toString()}`)
 
     if (!response.ok) {
       throw new Error("Failed to generate report")

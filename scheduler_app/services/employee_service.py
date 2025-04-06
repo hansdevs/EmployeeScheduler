@@ -8,25 +8,33 @@ import json
 from typing import Dict, List, Optional, Any
 
 # File paths for data storage
-EMPLOYEES_FILE = 'data/employees.json'
-
-# Ensure data directory exists
-os.makedirs('data', exist_ok=True)
+def get_company_file_path(company_id):
+    """Get company-specific file path"""
+    return f'data/company_{company_id}/employees.json'
 
 class EmployeeService:
-    def __init__(self):
+    def __init__(self, company_id=None):
         """Initialize the employee service"""
-        pass
+        self.company_id = company_id
+        
+    def get_file_path(self):
+        """Get the file path for this company"""
+        if not self.company_id:
+            return 'data/employees.json'  # Default for backward compatibility
+        return get_company_file_path(self.company_id)
     
     def get_all_employees(self) -> List:
         """Get all employees"""
         try:
-            if os.path.exists(EMPLOYEES_FILE):
-                with open(EMPLOYEES_FILE, 'r') as f:
+            file_path = self.get_file_path()
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            
+            if os.path.exists(file_path):
+                with open(file_path, 'r') as f:
                     return json.load(f)
             else:
                 # Create empty employees file if it doesn't exist
-                with open(EMPLOYEES_FILE, 'w') as f:
+                with open(file_path, 'w') as f:
                     json.dump([], f)
                 return []
         except Exception as e:
@@ -83,7 +91,7 @@ class EmployeeService:
         employees.append(employee_data)
         
         try:
-            with open(EMPLOYEES_FILE, 'w') as f:
+            with open(self.get_file_path(), 'w') as f:
                 json.dump(employees, f, indent=2)
             return employee_data
         except Exception as e:
@@ -115,7 +123,7 @@ class EmployeeService:
             employees[employee_index][key] = value
         
         try:
-            with open(EMPLOYEES_FILE, 'w') as f:
+            with open(self.get_file_path(), 'w') as f:
                 json.dump(employees, f, indent=2)
             return employees[employee_index]
         except Exception as e:
@@ -140,7 +148,7 @@ class EmployeeService:
         deleted_employee = employees.pop(employee_index)
         
         try:
-            with open(EMPLOYEES_FILE, 'w') as f:
+            with open(self.get_file_path(), 'w') as f:
                 json.dump(employees, f, indent=2)
             return deleted_employee
         except Exception as e:

@@ -9,6 +9,19 @@ import datetime
 from typing import Dict, List, Optional, Tuple, Any, Union
 
 # File paths for data storage
+def get_company_timeclock_file_path(company_id):
+    """Get company-specific timeclock file path"""
+    return f'data/company_{company_id}/timeclock.json'
+
+def get_company_timeclock_logs_file_path(company_id):
+    """Get company-specific timeclock logs file path"""
+    return f'data/company_{company_id}/timeclock_logs.json'
+
+def get_company_timeclock_settings_file_path(company_id):
+    """Get company-specific timeclock settings file path"""
+    return f'data/company_{company_id}/timeclock_settings.json'
+
+# File paths for data storage
 TIMECLOCK_FILE = 'data/timeclock.json'
 TIMECLOCK_LOGS_FILE = 'data/timeclock_logs.json'
 TIMECLOCK_SETTINGS_FILE = 'data/timeclock_settings.json'
@@ -17,20 +30,41 @@ TIMECLOCK_SETTINGS_FILE = 'data/timeclock_settings.json'
 os.makedirs('data', exist_ok=True)
 
 class TimeClockService:
-    def __init__(self, employee_service=None):
+    def __init__(self, employee_service=None, company_id=None):
         """Initialize the time clock service"""
         self.employee_service = employee_service
+        self.company_id = company_id
+        
+    def get_timeclock_file_path(self):
+        """Get the timeclock file path for this company"""
+        if not self.company_id:
+            return TIMECLOCK_FILE  # Default for backward compatibility
+        return get_company_timeclock_file_path(self.company_id)
+        
+    def get_timeclock_logs_file_path(self):
+        """Get the timeclock logs file path for this company"""
+        if not self.company_id:
+            return TIMECLOCK_LOGS_FILE  # Default for backward compatibility
+        return get_company_timeclock_logs_file_path(self.company_id)
+        
+    def get_timeclock_settings_file_path(self):
+        """Get the timeclock settings file path for this company"""
+        if not self.company_id:
+            return TIMECLOCK_SETTINGS_FILE  # Default for backward compatibility
+        return get_company_timeclock_settings_file_path(self.company_id)
         
     def load_timeclock_data(self) -> Dict:
         """Load the current time clock data"""
         try:
-            if os.path.exists(TIMECLOCK_FILE):
-                with open(TIMECLOCK_FILE, 'r') as f:
+            timeclock_file_path = self.get_timeclock_file_path()
+            if os.path.exists(timeclock_file_path):
+                with open(timeclock_file_path, 'r') as f:
                     return json.load(f)
             else:
                 # Create default structure if file doesn't exist
                 default_data = {"employees": {}}
-                with open(TIMECLOCK_FILE, 'w') as f:
+                os.makedirs(os.path.dirname(timeclock_file_path), exist_ok=True)
+                with open(timeclock_file_path, 'w') as f:
                     json.dump(default_data, f, indent=2)
                 return default_data
         except Exception as e:
@@ -40,7 +74,8 @@ class TimeClockService:
     def save_timeclock_data(self, data: Dict) -> bool:
         """Save time clock data to file"""
         try:
-            with open(TIMECLOCK_FILE, 'w') as f:
+            timeclock_file_path = self.get_timeclock_file_path()
+            with open(timeclock_file_path, 'w') as f:
                 json.dump(data, f, indent=2)
             return True
         except Exception as e:
@@ -50,12 +85,14 @@ class TimeClockService:
     def load_timeclock_logs(self) -> List:
         """Load time clock logs"""
         try:
-            if os.path.exists(TIMECLOCK_LOGS_FILE):
-                with open(TIMECLOCK_LOGS_FILE, 'r') as f:
+            timeclock_logs_file_path = self.get_timeclock_logs_file_path()
+            if os.path.exists(timeclock_logs_file_path):
+                with open(timeclock_logs_file_path, 'r') as f:
                     return json.load(f)
             else:
                 # Create empty logs file if it doesn't exist
-                with open(TIMECLOCK_LOGS_FILE, 'w') as f:
+                os.makedirs(os.path.dirname(timeclock_logs_file_path), exist_ok=True)
+                with open(timeclock_logs_file_path, 'w') as f:
                     json.dump([], f)
                 return []
         except Exception as e:
@@ -65,7 +102,8 @@ class TimeClockService:
     def save_timeclock_logs(self, logs: List) -> bool:
         """Save time clock logs to file"""
         try:
-            with open(TIMECLOCK_LOGS_FILE, 'w') as f:
+            timeclock_logs_file_path = self.get_timeclock_logs_file_path()
+            with open(timeclock_logs_file_path, 'w') as f:
                 json.dump(logs, f, indent=2)
             return True
         except Exception as e:
@@ -286,8 +324,9 @@ class TimeClockService:
     def get_settings(self) -> Dict:
         """Get time clock settings"""
         try:
-            if os.path.exists(TIMECLOCK_SETTINGS_FILE):
-                with open(TIMECLOCK_SETTINGS_FILE, 'r') as f:
+            timeclock_settings_file_path = self.get_timeclock_settings_file_path()
+            if os.path.exists(timeclock_settings_file_path):
+                with open(timeclock_settings_file_path, 'r') as f:
                     return json.load(f)
             else:
                 # Create default settings if file doesn't exist
@@ -296,7 +335,8 @@ class TimeClockService:
                     "allow_remote_punch": True,
                     "require_photo": False
                 }
-                with open(TIMECLOCK_SETTINGS_FILE, 'w') as f:
+                os.makedirs(os.path.dirname(timeclock_settings_file_path), exist_ok=True)
+                with open(timeclock_settings_file_path, 'w') as f:
                     json.dump(default_settings, f, indent=2)
                 return default_settings
         except Exception as e:
@@ -316,7 +356,8 @@ class TimeClockService:
             current_settings[key] = value
         
         try:
-            with open(TIMECLOCK_SETTINGS_FILE, 'w') as f:
+            timeclock_settings_file_path = self.get_timeclock_settings_file_path()
+            with open(timeclock_settings_file_path, 'w') as f:
                 json.dump(current_settings, f, indent=2)
             return current_settings
         except Exception as e:

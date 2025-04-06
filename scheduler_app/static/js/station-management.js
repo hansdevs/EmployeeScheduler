@@ -40,7 +40,7 @@ async function loadStations() {
     document.getElementById("statusMessage").innerHTML =
       '<div class="alert alert-info"><i class="bi bi-info-circle-fill me-2"></i>Loading positions/stations...</div>'
 
-    const response = await fetch("/api/stations")
+    const response = await fetch("../api/stations")
     if (!response.ok) {
       throw new Error("Failed to load positions/stations")
     }
@@ -110,7 +110,7 @@ async function addStation() {
     document.getElementById("statusMessage").innerHTML =
       '<div class="alert alert-info"><i class="bi bi-info-circle-fill me-2"></i>Adding position/station...</div>'
 
-    const response = await fetch("/api/stations", {
+    const response = await fetch("../api/stations", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -193,7 +193,8 @@ function editStation(id) {
   }
 
   // Show the modal
-  const modal = new bootstrap.Modal(document.getElementById("editStationModal"))
+  const modalElement = document.getElementById("editStationModal")
+  const modal = new bootstrap.Modal(modalElement)
   modal.show()
 }
 
@@ -212,7 +213,7 @@ async function saveStationEdit() {
     document.getElementById("statusMessage").innerHTML =
       '<div class="alert alert-info"><i class="bi bi-info-circle-fill me-2"></i>Updating position/station...</div>'
 
-    const response = await fetch(`/api/stations/${id}`, {
+    const response = await fetch(`../api/stations/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -264,7 +265,8 @@ function deleteStation(id) {
   document.getElementById("deleteStationId").value = id
 
   // Show the confirmation modal
-  const modal = new bootstrap.Modal(document.getElementById("deleteConfirmModal"))
+  const modalElement = document.getElementById("deleteConfirmModal")
+  const modal = new bootstrap.Modal(modalElement)
   modal.show()
 }
 
@@ -275,7 +277,7 @@ async function confirmDeleteStation() {
     document.getElementById("statusMessage").innerHTML =
       '<div class="alert alert-info"><i class="bi bi-info-circle-fill me-2"></i>Deleting position/station...</div>'
 
-    const response = await fetch(`/api/stations/${id}`, {
+    const response = await fetch(`../api/stations/${id}`, {
       method: "DELETE",
     })
 

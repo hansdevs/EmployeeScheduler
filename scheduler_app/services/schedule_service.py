@@ -8,6 +8,15 @@ import json
 from typing import Dict, List, Optional, Any, Union
 
 # File paths for data storage
+def get_company_draft_file_path(company_id):
+    """Get company-specific draft file path"""
+    return f'data/company_{company_id}/schedule_draft.json'
+
+def get_company_published_file_path(company_id):
+    """Get company-specific published file path"""
+    return f'data/company_{company_id}/schedule_published.json'
+
+# File paths for data storage
 SCHEDULE_DRAFT_FILE = 'data/schedule_draft.json'
 SCHEDULE_PUBLISHED_FILE = 'data/schedule_published.json'
 
@@ -15,22 +24,38 @@ SCHEDULE_PUBLISHED_FILE = 'data/schedule_published.json'
 os.makedirs('data', exist_ok=True)
 
 class ScheduleService:
-    def __init__(self, employee_service=None, station_service=None, business_service=None):
+    def __init__(self, employee_service=None, station_service=None, business_service=None, company_id=None):
         """Initialize the schedule service"""
         self.employee_service = employee_service
         self.station_service = station_service
         self.business_service = business_service
-    
+        self.company_id = company_id
+       
+    def get_draft_file_path(self):
+        """Get the draft file path for this company"""
+        if not self.company_id:
+            return SCHEDULE_DRAFT_FILE  # Default for backward compatibility
+        return get_company_draft_file_path(self.company_id)
+       
+    def get_published_file_path(self):
+        """Get the published file path for this company"""
+        if not self.company_id:
+            return SCHEDULE_PUBLISHED_FILE  # Default for backward compatibility
+        return get_company_published_file_path(self.company_id)
+   
     def get_draft_schedule(self) -> Dict:
         """Get the current draft schedule"""
         try:
-            if os.path.exists(SCHEDULE_DRAFT_FILE):
-                with open(SCHEDULE_DRAFT_FILE, 'r') as f:
+            file_path = self.get_draft_file_path()
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+           
+            if os.path.exists(file_path):
+                with open(file_path, 'r') as f:
                     return json.load(f)
             else:
                 # Create default structure if file doesn't exist
                 default_data = {"schedule": [], "is_published": False}
-                with open(SCHEDULE_DRAFT_FILE, 'w') as f:
+                with open(file_path, 'w') as f:
                     json.dump(default_data, f, indent=2)
                 return default_data
         except Exception as e:
@@ -40,8 +65,9 @@ class ScheduleService:
     def save_draft_schedule(self, schedule_data: List) -> Dict:
         """Save the draft schedule"""
         try:
+            file_path = self.get_draft_file_path()
             data = {"schedule": schedule_data, "is_published": False}
-            with open(SCHEDULE_DRAFT_FILE, 'w') as f:
+            with open(file_path, 'w') as f:
                 json.dump(data, f, indent=2)
             return {"status": "saved", "message": "Schedule saved as draft"}
         except Exception as e:
@@ -51,8 +77,9 @@ class ScheduleService:
     def get_published_schedule(self) -> Dict:
         """Get the published schedule"""
         try:
-            if os.path.exists(SCHEDULE_PUBLISHED_FILE):
-                with open(SCHEDULE_PUBLISHED_FILE, 'r') as f:
+            file_path = self.get_published_file_path()
+            if os.path.exists(file_path):
+                with open(file_path, 'r') as f:
                     data = json.load(f)
                     # Add is_published flag if not present
                     if "is_published" not in data:
@@ -67,8 +94,9 @@ class ScheduleService:
     def publish_schedule(self, schedule_data: List) -> Dict:
         """Publish the schedule"""
         try:
+            file_path = self.get_published_file_path()
             data = {"schedule": schedule_data, "is_published": True}
-            with open(SCHEDULE_PUBLISHED_FILE, 'w') as f:
+            with open(file_path, 'w') as f:
                 json.dump(data, f, indent=2)
             return {"status": "published", "message": "Schedule published successfully"}
         except Exception as e:

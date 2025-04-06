@@ -23,7 +23,7 @@ async function loadEmployees() {
         '<div class="alert alert-info"><i class="bi bi-info-circle-fill me-2"></i>Loading employees...</div>'
     }
 
-    const response = await fetch("/api/employees")
+    const response = await fetch("../api/employees")
     if (!response.ok) {
       throw new Error("Failed to load employees")
     }
@@ -130,7 +130,7 @@ function addEmployee() {
   }
 
   // Send to server
-  fetch("/api/employees", {
+  fetch("../api/employees", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(employeeData),
@@ -263,7 +263,7 @@ function saveEmployeeEdit(id) {
   }
 
   // Send to server
-  fetch(`/api/employees/${id}`, {
+  fetch(`../api/employees/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updateData),
@@ -279,6 +279,7 @@ function saveEmployeeEdit(id) {
     .then((data) => {
       // Close the modal
       const modalElement = document.getElementById("editEmployeeModal")
+      // Access the Bootstrap modal instance using the static method
       const modal = bootstrap.Modal.getInstance(modalElement)
       modal.hide()
 
@@ -304,7 +305,7 @@ function removeEmployee(id) {
   showStatusMessage("Removing employee...", "info")
 
   // Send to server
-  fetch(`/api/employees/${id}`, {
+  fetch(`../api/employees/${id}`, {
     method: "DELETE",
   })
     .then((response) => {
@@ -337,7 +338,7 @@ function saveTimeclockSettings() {
   showStatusMessage("Saving time clock settings...", "info")
 
   // Send to server
-  fetch("/api/timeclock/settings", {
+  fetch("../api/timeclock/settings", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

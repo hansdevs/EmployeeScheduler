@@ -1,100 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Sign In - The Scheduler</title>
-  <link rel="stylesheet" href="/styles/pages.css" />
+ <meta charset="UTF-8" />
+ <title>Sign In - The Scheduler</title>
+ <link rel="stylesheet" href="../styles/pages.css" />
+ <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 </head>
 <body>
-  <header class="header">
-    <nav class="navbar">
-      <div class="logo">The Scheduler</div>
-      <div class="nav-actions">
-        <a href="/pages/index.html" class="nav-link">Home</a>
-        <a href="/pages/plans.html" class="nav-link">Plans</a>
-        <button id="themeToggle" class="dark-mode-toggle">Toggle Dark Mode</button>
-      </div>
-    </nav>
-  </header>
+ <header class="header">
+   <nav class="navbar">
+     <div class="logo">The Scheduler</div>
+     <div class="nav-actions">
+       <a href="../pages/index.html" class="nav-link">Home</a>
+       <a href="../pages/plans.html" class="nav-link">Plans</a>
+       <button id="themeToggle" class="dark-mode-toggle">Toggle Dark Mode</button>
+     </div>
+   </nav>
+ </header>
 
-  <main class="get-started">
-    <h1 class="section-title">Sign In</h1>
-    <p class="form-intro">Enter your credentials to access your account.</p>
+ <main class="get-started">
+   <h1 class="section-title">Sign In</h1>
+   <p class="form-intro">Enter your credentials to access your account.</p>
 
-    <!-- Sign In Form -->
-    <!-- POST to /fake_signin so Flask can handle the test login -->
-    <form class="signup-form" action="/fake_signin" method="POST">
-      <div class="form-group">
-        <label for="email">Email Address</label>
-        <input 
-          type="email" 
-          id="email" 
-          name="email" 
-          placeholder="you@example.com" 
-          required 
-        />
-      </div>
+   <div id="errorMessage" class="alert alert-danger d-none" role="alert"></div>
 
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input 
-          type="password" 
-          id="password" 
-          name="password" 
-          placeholder="Minimum 8 characters" 
-          required 
-        />
-      </div>
+   <!-- Sign In Form -->
+   <!-- POST to /fake_signin so Flask can handle the test login -->
+   <form class="signup-form" action="../fake_signin" method="POST">
+     <div class="form-group">
+       <label for="email">Email Address</label>
+       <input 
+         type="email" 
+         id="email" 
+         name="email" 
+         placeholder="you@example.com" 
+         required 
+       />
+     </div>
 
-      <button type="submit" class="form-submit-btn">Sign In</button>
-    </form>
+     <div class="form-group">
+       <label for="password">Password</label>
+       <input 
+         type="password" 
+         id="password" 
+         name="password" 
+         placeholder="Your password" 
+         required 
+       />
+     </div>
 
-    <div class="plans-redirect">
-      <p>
-        Don’t have an account yet? <a href="/pages/getstarted.html">Get Started</a><br/>
-        <a href="#">Forgot Password?</a>
-      </p>
-    </div>
-  </main>
+     <button type="submit" class="form-submit-btn">Sign In</button>
+   </form>
 
-  <footer class="footer">
-    <p>&copy; 2025 The Scheduler. All rights reserved.</p>
-  </footer>
+   <div class="plans-redirect">
+     <p>
+       Don't have an account yet? <a href="../pages/getstarted.html">Get Started</a><br/>
+       <a href="#">Forgot Password?</a>
+     </p>
+   </div>
+ </main>
 
-  <script>
-    const body = document.body;
-    const themeToggle = document.getElementById('themeToggle');
+ <footer class="footer">
+   <p>&copy; 2025 The Scheduler. All rights reserved.</p>
+ </footer>
 
-    window.addEventListener('DOMContentLoaded', async () => {
-      try {
-        const res = await fetch('/api/user', { credentials: 'include' });
-        if (!res.ok) return;
-        const user = await res.json();
-        if (user.theme === 'dark') {
-          body.classList.add('dark-mode');
-          themeToggle.textContent = 'Toggle Light Mode';
-        }
-      } catch (err) {
-        console.error('Failed to fetch user:', err);
-      }
-    });
+ <script>
+   const body = document.body;
+   const themeToggle = document.getElementById('themeToggle');
+   const errorMessage = document.getElementById('errorMessage');
 
-    themeToggle.addEventListener('click', async () => {
-      const isDarkNow = body.classList.toggle('dark-mode');
-      const newTheme = isDarkNow ? 'dark' : 'light';
-      themeToggle.textContent = isDarkNow ? 'Toggle Light Mode' : 'Toggle Dark Mode';
+   // Check for error parameter in URL
+   window.addEventListener('DOMContentLoaded', () => {
+     const urlParams = new URLSearchParams(window.location.search);
+     const error = urlParams.get('error');
+     
+     if (error) {
+       errorMessage.textContent = decodeURIComponent(error);
+       errorMessage.classList.remove('d-none');
+     }
+   });
 
-      try {
-        await fetch('/api/theme', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ theme: newTheme })
-        });
-      } catch (err) {
-        console.error('Error updating theme:', err);
-      }
-    });
-  </script>
+   themeToggle.addEventListener('click', () => {
+     const isDarkNow = body.classList.toggle('dark-mode');
+     themeToggle.textContent = isDarkNow ? 'Toggle Light Mode' : 'Toggle Dark Mode';
+   });
+ </script>
 </body>
 </html>
+
