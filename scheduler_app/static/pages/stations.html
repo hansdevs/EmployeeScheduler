@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stations</title>
+  <title>Positions & Stations</title>
   
   <!-- Bootstrap CSS -->
   <link
@@ -13,6 +13,9 @@
   
   <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  
+  <!-- Select2 CSS (optional) -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
   
   <!-- Custom CSS -->
   <link rel="stylesheet" href="/pages/schedule.css" />
@@ -27,7 +30,7 @@
         <a href="/pages/schedule.html" class="text-white-50 me-3">Schedule</a>
         <a href="/pages/business.html" class="text-white-50 me-3">Business</a>
         <a href="/pages/employees.html" class="text-white-50 me-3">Employees</a>
-        <a href="/pages/stations.html" class="text-white me-3">Stations</a>
+        <a href="/pages/stations.html" class="text-white me-3">Positions</a>
         <a href="/pages/official.html" class="text-white-50 me-3">Official&nbsp;Schedule</a>
         <a href="/pages/timeclock.html" class="text-white-50 me-3">Time&nbsp;Clock</a>
       </div>
@@ -40,10 +43,20 @@
     
     <div class="stations-container">
       <div class="stations-header">
-        <h2 class="stations-title">Stations</h2>
-        <button class="btn btn-outline-primary" onclick="loadStations()">
-          <i class="bi bi-arrow-clockwise"></i> Refresh
-        </button>
+        <h2 class="stations-title">Positions & Stations</h2>
+        <div>
+          <button class="btn btn-outline-primary me-2" onclick="loadStations()">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+          </button>
+          <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#positionTypesModal">
+            <i class="bi bi-gear"></i> Position Types
+          </button>
+        </div>
+      </div>
+      
+      <div class="alert alert-info mb-4">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        <strong>What are Positions & Stations?</strong> Depending on your business type, these could be physical locations (cashier, desk), roles (sales, host), or any position that needs to be scheduled.
       </div>
       
       <!-- Table for existing stations -->
@@ -52,8 +65,9 @@
           <thead class="table-light">
             <tr>
               <th>ID</th>
-              <th>Station Name</th>
-              <th>Type</th>
+              <th>Name</th>
+              <th>Type/Category</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody id="stationsBody">
@@ -64,22 +78,184 @@
       
       <!-- Add Station Form -->
       <div class="station-form">
-        <h3 class="form-title">Add New Station</h3>
+        <h3 class="form-title">Add New Position/Station</h3>
         <div class="row">
           <div class="col-md-6 mb-3">
-            <label class="form-label" for="stationName">Station Name</label>
-            <input type="text" id="stationName" class="form-control" placeholder="Enter station name" required>
+            <label class="form-label" for="stationName">Name</label>
+            <input type="text" id="stationName" class="form-control" placeholder="Enter position/station name" required>
           </div>
           
           <div class="col-md-6 mb-3">
-            <label class="form-label" for="stationType">Type</label>
-            <input type="text" id="stationType" class="form-control" placeholder="e.g. Cash Register, Desk, etc.">
+            <label class="form-label" for="stationType">Type/Category</label>
+            <select id="stationType" class="form-select">
+              <option value="">Select or type a category</option>
+              <option value="Cashier">Cashier</option>
+              <option value="Sales">Sales</option>
+              <option value="Host">Host</option>
+              <option value="Server">Server</option>
+              <option value="Kitchen">Kitchen</option>
+              <option value="Manager">Manager</option>
+              <option value="Reception">Reception</option>
+              <option value="Desk">Desk</option>
+              <option value="Other">Other</option>
+            </select>
+            <small class="text-muted">Or type a custom category</small>
           </div>
         </div>
         
         <button class="add-btn" onclick="addStation()">
-          <i class="bi bi-plus-circle me-2"></i> Add Station
+          <i class="bi bi-plus-circle me-2"></i> Add Position/Station
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Station Modal -->
+  <div class="modal fade" id="editStationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Position/Station</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="editStationId">
+          <div class="mb-3">
+            <label for="editStationName" class="form-label">Name</label>
+            <input type="text" class="form-control" id="editStationName" required>
+          </div>
+          <div class="mb-3">
+            <label for="editStationType" class="form-label">Type/Category</label>
+            <select id="editStationType" class="form-select">
+              <option value="">Select or type a category</option>
+              <option value="Cashier">Cashier</option>
+              <option value="Sales">Sales</option>
+              <option value="Host">Host</option>
+              <option value="Server">Server</option>
+              <option value="Kitchen">Kitchen</option>
+              <option value="Manager">Manager</option>
+              <option value="Reception">Reception</option>
+              <option value="Desk">Desk</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" onclick="saveStationEdit()">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Position Types Modal -->
+  <div class="modal fade" id="positionTypesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Position/Station Types</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                  <h5 class="mb-0">Retail Business</h5>
+                </div>
+                <div class="card-body">
+                  <ul class="list-group">
+                    <li class="list-group-item">Cashier</li>
+                    <li class="list-group-item">Sales Associate</li>
+                    <li class="list-group-item">Floor Manager</li>
+                    <li class="list-group-item">Stock Room</li>
+                    <li class="list-group-item">Customer Service</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                  <h5 class="mb-0">Restaurant</h5>
+                </div>
+                <div class="card-body">
+                  <ul class="list-group">
+                    <li class="list-group-item">Host/Hostess</li>
+                    <li class="list-group-item">Server</li>
+                    <li class="list-group-item">Bartender</li>
+                    <li class="list-group-item">Kitchen Staff</li>
+                    <li class="list-group-item">Busser</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                  <h5 class="mb-0">Office</h5>
+                </div>
+                <div class="card-body">
+                  <ul class="list-group">
+                    <li class="list-group-item">Reception</li>
+                    <li class="list-group-item">Front Desk</li>
+                    <li class="list-group-item">Meeting Room</li>
+                    <li class="list-group-item">Phone Support</li>
+                    <li class="list-group-item">Administrative</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                  <h5 class="mb-0">Healthcare</h5>
+                </div>
+                <div class="card-body">
+                  <ul class="list-group">
+                    <li class="list-group-item">Front Desk</li>
+                    <li class="list-group-item">Nurse Station</li>
+                    <li class="list-group-item">Exam Room</li>
+                    <li class="list-group-item">Lab</li>
+                    <li class="list-group-item">Pharmacy</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="text-muted mt-2">
+            <i class="bi bi-info-circle me-1"></i> 
+            These are just examples. You can create custom position types that fit your business needs.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirm Deletion</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete this position/station?</p>
+          <p class="text-danger"><strong>Warning:</strong> This will remove it from any schedules it's used in.</p>
+          <input type="hidden" id="deleteStationId">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" onclick="confirmDeleteStation()">
+            <i class="bi bi-trash me-1"></i> Delete
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -89,6 +265,9 @@
   
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- Select2 JS (optional) -->
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
   <!-- Local time display -->
   <script>
@@ -104,125 +283,8 @@
     updateLocalTime();
   </script>
 
-  <!-- Main Stations Logic -->
-  <script>
-    async function loadStations() {
-      try {
-        document.getElementById('statusMessage').innerHTML = 
-          '<div class="alert alert-info"><i class="bi bi-info-circle-fill me-2"></i>Loading stations...</div>';
-        
-        const response = await fetch('/api/stations');
-        if(!response.ok) {
-          throw new Error('Failed to load stations');
-        }
-        
-        const stations = await response.json();
-        renderStations(stations);
-        
-        document.getElementById('statusMessage').innerHTML = '';
-      } catch (error) {
-        console.error(error);
-        document.getElementById('statusMessage').innerHTML = 
-          `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>${error.message}</div>`;
-      }
-    }
-
-    function renderStations(stations) {
-      const tbody = document.getElementById('stationsBody');
-      tbody.innerHTML = ''; // clear existing rows
-
-      if(!stations || stations.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="3">
-              <div class="empty-state">
-                <i class="bi bi-building"></i>
-                <h4>No stations yet</h4>
-                <p>Add your first station using the form below</p>
-              </div>
-            </td>
-          </tr>
-        `;
-        return;
-      }
-
-      stations.forEach(st => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${st.id}</td>
-          <td>${st.name}</td>
-          <td>${st.type ? `<span class="station-badge">${st.type}</span>` : '<span class="text-muted">Not specified</span>'}</td>
-        `;
-        tbody.appendChild(row);
-      });
-    }
-
-    async function addStation() {
-      const name = document.getElementById('stationName').value.trim();
-      const type = document.getElementById('stationType').value.trim();
-
-      if(!name) {
-        document.getElementById('statusMessage').innerHTML = 
-          '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>Station name is required!</div>';
-        document.getElementById('stationName').focus();
-        return;
-      }
-
-      try {
-        document.getElementById('statusMessage').innerHTML = 
-          '<div class="alert alert-info"><i class="bi bi-info-circle-fill me-2"></i>Adding station...</div>';
-        
-        const response = await fetch('/api/stations', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            name: name,
-            type: type
-          })
-        });
-        
-        if(!response.ok) {
-          throw new Error('Failed to add station');
-        }
-        
-        const data = await response.json();
-        console.log('Station added:', data);
-
-        // Clear form inputs
-        document.getElementById('stationName').value = '';
-        document.getElementById('stationType').value = '';
-
-        // Show success message
-        document.getElementById('statusMessage').innerHTML = 
-          '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Station added successfully!</div>';
-        
-        // Reload the stations
-        loadStations();
-        
-        // Fade out the message after 3 seconds
-        setTimeout(() => {
-          const msgDiv = document.getElementById('statusMessage');
-          msgDiv.style.transition = 'opacity 1s';
-          msgDiv.style.opacity = '0';
-          setTimeout(() => {
-            msgDiv.innerHTML = '';
-            msgDiv.style.opacity = '1';
-          }, 1000);
-        }, 3000);
-      } catch(error) {
-        console.error(error);
-        document.getElementById('statusMessage').innerHTML = 
-          `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>${error.message}</div>`;
-      }
-    }
-
-    // Auto-load stations on page load
-    document.addEventListener('DOMContentLoaded', () => {
-      loadStations();
-    });
-  </script>
+  <!-- Station Management JS -->
+  <script src="/js/station-management.js"></script>
 </body>
 </html>
 
