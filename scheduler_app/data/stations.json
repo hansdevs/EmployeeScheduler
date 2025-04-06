@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "name": "Off-Road Tires",
+    "type": "Sales"
+  },
+  {
+    "id": 2,
+    "name": "Back Desk",
+    "type": "Management"
+  }
+]

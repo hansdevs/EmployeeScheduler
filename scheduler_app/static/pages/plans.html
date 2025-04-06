@@ -2,251 +2,251 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Select a Plan - The Scheduler</title>
+  <title>Pricing Plans - The Scheduler</title>
   <link rel="stylesheet" href="/styles/pages.css" />
-  <style>
-    .plans-section {
-      padding: 1rem;
-    }
-    .section-title {
-      margin-bottom: 0.5rem;
-      text-align: center;
-    }
-    .plans-intro {
-      text-align: center;
-      margin-bottom: 1.5rem;
-    }
-    .plans-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-    .plan-card {
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      padding: 1rem;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .plan-card h2 {
-      margin-bottom: 0.5rem;
-    }
-    .price {
-      font-weight: bold;
-      margin-bottom: 1rem;
-    }
-    .plan-card ul {
-      margin-bottom: 1rem;
-      list-style-type: disc;
-      padding-left: 1.5rem;
-    }
-
-    /* Instead of “space-between”, we’ll just group them with a small gap */
-    .card-actions {
-      display: inline-flex;
-      gap: 0.5rem;
-      align-items: center;
-      margin-top: auto; /* ensures buttons stay at bottom if content grows */
-    }
-
-    /* Common button base style */
-    .select-plan-btn,
-    .learn-more-btn {
-      display: inline-block;
-      height: 38px;
-      padding: 0 12px;
-      font-size: 16px;
-      line-height: 38px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      background-color: #f3f3f3;
-      cursor: pointer;
-      text-decoration: none; /* for the <a> version */
-      color: #000;
-    }
-    .select-plan-btn:hover,
-    .learn-more-btn:hover {
-      background-color: #eaeaea;
-    }
-
-    .how-it-works {
-      margin-bottom: 2rem;
-    }
-    .how-it-works h2 {
-      margin-bottom: 1rem;
-    }
-    .how-it-works ol {
-      margin-bottom: 1rem;
-      margin-left: 2rem;
-    }
-    .dark-mode {
-      background-color: #121212;
-      color: #eee;
-    }
-  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 </head>
 <body>
   <header class="header">
     <nav class="navbar">
       <div class="logo">The Scheduler</div>
+      <!-- Remove dark mode toggle from the navbar -->
       <div class="nav-actions">
         <a href="/pages/index.html" class="nav-link">Home</a>
-        <button id="themeToggle" class="dark-mode-toggle">Toggle Dark Mode</button>
+        <a href="/pages/about.html" class="nav-link">About Us</a>
       </div>
     </nav>
   </header>
 
-  <main class="plans-section">
-    <h1 class="section-title">Choose Your Plan</h1>
-    <p class="plans-intro">
-      Find the right plan for your organization. Upgrade or downgrade anytime. <br/>
-      <em>Large Business and Enterprise plans include Tier 1 support.</em>
-    </p>
+  <main>
+    <section class="pricing-hero">
+      <div class="pricing-hero-content">
+        <h1 class="pricing-title">Simple, Transparent Pricing</h1>
+        <p class="pricing-subtitle">Choose the plan that fits your business needs. All plans include our core scheduling features.</p>
+      </div>
+    </section>
 
-    <div class="plans-grid">
-      <!-- Small Business Card -->
-      <div class="plan-card">
-        <h2>Small Business</h2>
-        <p class="price">$14.99 / month</p>
-        <ul>
-          <li>Up to 10 Employees</li>
-          <li>1 Admin / 1 Manager</li>
-          <li>Standard Support</li>
-        </ul>
-        <div class="card-actions">
-          <button class="select-plan-btn">Select</button>
-          <a href="/pages/plans/small-business.html" class="learn-more-btn">Learn More</a>
+    <section class="pricing-toggle-section">
+      <div class="pricing-toggle">
+        <span class="pricing-period active">Monthly</span>
+        <label class="switch">
+          <input type="checkbox" id="billingToggle">
+          <span class="slider round"></span>
+        </label>
+        <span class="pricing-period">Annual <span class="save-badge">Save 20%</span></span>
+      </div>
+    </section>
+
+    <section class="pricing-plans">
+      <!-- Small Business Plan -->
+      <div class="pricing-card">
+        <div class="pricing-card-header">
+          <h2>Small Business</h2>
+          <div class="pricing-amount">
+            <span class="price-currency">$</span>
+            <span class="price-value" data-monthly="14.99" data-annual="11.99">14.99</span>
+            <span class="price-period">/month</span>
+          </div>
+          <p class="pricing-billed-text">Billed monthly</p>
+        </div>
+        <div class="pricing-card-body">
+          <ul class="pricing-features">
+            <li><i class="bi bi-check-circle-fill"></i> Up to 10 Employees</li>
+            <li><i class="bi bi-check-circle-fill"></i> 1 Admin / 1 Manager</li>
+            <li><i class="bi bi-check-circle-fill"></i> Basic Scheduling</li>
+            <li><i class="bi bi-check-circle-fill"></i> Time Clock System</li>
+            <li><i class="bi bi-check-circle-fill"></i> Email Support</li>
+          </ul>
+          <a href="/pages/plans/small-business.html" class="pricing-details-link">View Details</a>
+        </div>
+        <div class="pricing-card-footer">
+          <a href="/pages/getstarted.html" class="pricing-cta-button">Get Started</a>
         </div>
       </div>
 
-      <!-- Growing Business Card -->
-      <div class="plan-card">
-        <h2>Growing Business</h2>
-        <p class="price">$29.99 / month</p>
-        <ul>
-          <li>Up to 30 Employees</li>
-          <li>Up to 2 Admins and 2 Managers</li>
-          <li>Standard Support</li>
-        </ul>
-        <div class="card-actions">
-          <button class="select-plan-btn">Select</button>
-          <a href="/pages/plans/growing-business.html" class="learn-more-btn">Learn More</a>
+      <!-- Growing Business Plan -->
+      <div class="pricing-card popular">
+        <div class="popular-badge">Most Popular</div>
+        <div class="pricing-card-header">
+          <h2>Growing Business</h2>
+          <div class="pricing-amount">
+            <span class="price-currency">$</span>
+            <span class="price-value" data-monthly="29.99" data-annual="23.99">29.99</span>
+            <span class="price-period">/month</span>
+          </div>
+          <p class="pricing-billed-text">Billed monthly</p>
+        </div>
+        <div class="pricing-card-body">
+          <ul class="pricing-features">
+            <li><i class="bi bi-check-circle-fill"></i> Up to 30 Employees</li>
+            <li><i class="bi bi-check-circle-fill"></i> 2 Admins / 2 Managers</li>
+            <li><i class="bi bi-check-circle-fill"></i> Advanced Scheduling</li>
+            <li><i class="bi bi-check-circle-fill"></i> Time Clock + Reporting</li>
+            <li><i class="bi bi-check-circle-fill"></i> Priority Email Support</li>
+            <li><i class="bi bi-check-circle-fill"></i> Basic API Access</li>
+          </ul>
+          <a href="/pages/plans/growing-business.html" class="pricing-details-link">View Details</a>
+        </div>
+        <div class="pricing-card-footer">
+          <a href="/pages/getstarted.html" class="pricing-cta-button">Get Started</a>
         </div>
       </div>
 
-      <!-- Medium Business Card -->
-      <div class="plan-card">
-        <h2>Medium Business</h2>
-        <p class="price">$74.99 / month</p>
-        <ul>
-          <li>Up to 100 Employees</li>
-          <li>Up to 5 Admins and 10 Managers</li>
-          <li>Standard Support</li>
-        </ul>
-        <div class="card-actions">
-          <button class="select-plan-btn">Select</button>
-          <a href="/pages/plans/medium-business.html" class="learn-more-btn">Learn More</a>
+      <!-- Medium Business Plan -->
+      <div class="pricing-card">
+        <div class="pricing-card-header">
+          <h2>Medium Business</h2>
+          <div class="pricing-amount">
+            <span class="price-currency">$</span>
+            <span class="price-value" data-monthly="74.99" data-annual="59.99">74.99</span>
+            <span class="price-period">/month</span>
+          </div>
+          <p class="pricing-billed-text">Billed monthly</p>
+        </div>
+        <div class="pricing-card-body">
+          <ul class="pricing-features">
+            <li><i class="bi bi-check-circle-fill"></i> Up to 100 Employees</li>
+            <li><i class="bi bi-check-circle-fill"></i> 5 Admins / 10 Managers</li>
+            <li><i class="bi bi-check-circle-fill"></i> Advanced Scheduling</li>
+            <li><i class="bi bi-check-circle-fill"></i> Complete Reporting Suite</li>
+            <li><i class="bi bi-check-circle-fill"></i> Phone + Email Support</li>
+            <li><i class="bi bi-check-circle-fill"></i> Full API Access</li>
+            <li><i class="bi bi-check-circle-fill"></i> Custom Integrations</li>
+          </ul>
+          <a href="/pages/plans/medium-business.html" class="pricing-details-link">View Details</a>
+        </div>
+        <div class="pricing-card-footer">
+          <a href="/pages/getstarted.html" class="pricing-cta-button">Get Started</a>
         </div>
       </div>
+    </section>
 
-      <!-- Large Business Card -->
-      <div class="plan-card">
-        <h2>Large Business</h2>
-        <p class="price">$299.99 / month</p>
-        <ul>
-          <li>Up to 1000 Employees</li>
-          <li>Up to 25 Admins and 75 Managers</li>
-          <li>Priority Support (Tier 1)</li>
-        </ul>
-        <div class="card-actions">
-          <button class="select-plan-btn">Select</button>
-          <a href="/pages/plans/large-business.html" class="learn-more-btn">Learn More</a>
+    <section class="enterprise-section">
+      <div class="enterprise-card">
+        <div class="enterprise-content">
+          <h2>Enterprise & Large Business Solutions</h2>
+          <p>Need a custom solution for your large organization? Our enterprise plans support up to 10,000 employees with unlimited admins, dedicated account managers, and 24/7 priority support.</p>
+          <a href="/pages/plans/enterprise.html" class="enterprise-cta-button">Contact Sales</a>
         </div>
       </div>
+    </section>
 
-      <!-- Enterprise Card -->
-      <div class="plan-card">
-        <h2>Enterprise</h2>
-        <p class="price">$999.99 / month</p>
-        <ul>
-          <li>Up to 10,000 Employees</li>
-          <li>Unlimited Admins / Managers</li>
-          <li>Priority Support (Tier 1)</li>
-        </ul>
-        <div class="card-actions">
-          <button class="select-plan-btn">Select</button>
-          <a href="/pages/plans/enterprise.html" class="learn-more-btn">Learn More</a>
+    <section class="pricing-faq">
+      <h2 class="faq-title">Frequently Asked Questions</h2>
+      <div class="faq-grid">
+        <div class="faq-item">
+          <h3>Can I change plans later?</h3>
+          <p>Yes, you can upgrade or downgrade your plan at any time. Changes take effect at the start of your next billing cycle.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Is there a free trial?</h3>
+          <p>We offer a 14-day free trial on all plans. No credit card required to start your trial.</p>
+        </div>
+        <div class="faq-item">
+          <h3>What payment methods do you accept?</h3>
+          <p>We accept all major credit cards, PayPal, and offer invoicing options for Enterprise customers.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Can I get a refund?</h3>
+          <p>We offer a 30-day money-back guarantee if you're not satisfied with our service.</p>
         </div>
       </div>
-    </div>
+    </section>
 
-    <section class="how-it-works">
-      <h2>How It Works</h2>
-      <ol>
-        <li>
-          <strong>Sign Up:</strong> Already have an account?
-          <a href="/pages/signin.html">Sign In</a>. Otherwise,
-          <a href="/pages/getstarted.html">create an account</a> first.
-        </li>
-        <li>
-          <strong>Select Your Plan:</strong> Choose from the options above based on your employee count and features.
-        </li>
-        <li>
-          <strong>Enter Payment Details:</strong> Securely provide billing info. You can upgrade or downgrade anytime.
-        </li>
-        <li>
-          <strong>Start Scheduling:</strong> Once subscribed, you gain immediate access to The Scheduler’s full suite of tools.
-        </li>
-      </ol>
-      <p>
-        If you have any questions, feel free to <a href="#">contact us</a>. 
-        We’re here 24/7, with Tier 1 support guaranteed for Large Business and Enterprise.
-      </p>
+    <section class="pricing-cta-section">
+      <div class="pricing-cta-content">
+        <h2>Ready to streamline your workforce management?</h2>
+        <p>Join thousands of businesses that trust The Scheduler to optimize their operations.</p>
+        <div class="pricing-cta-buttons">
+          <a href="/pages/getstarted.html" class="cta-button">Start Your Free Trial</a>
+          <a href="#" class="secondary-cta">Schedule a Demo</a>
+        </div>
+      </div>
     </section>
   </main>
 
   <footer class="footer">
-    <p>&copy; 2025 The Scheduler. All rights reserved.</p>
+    <div class="footer-grid">
+      <div class="footer-column">
+        <h3>Product</h3>
+        <ul>
+          <li><a href="#">Features</a></li>
+          <li><a href="/pages/plans.html">Pricing</a></li>
+          <li><a href="#">Integrations</a></li>
+          <li><a href="#">Enterprise</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-column">
+        <h3>Resources</h3>
+        <ul>
+          <li><a href="#">Documentation</a></li>
+          <li><a href="#">Guides</a></li>
+          <li><a href="#">API Reference</a></li>
+          <li><a href="#">Community</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-column">
+        <h3>Company</h3>
+        <ul>
+          <li><a href="/pages/about.html">About Us</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-column">
+        <h3>Legal</h3>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="#">Security</a></li>
+          <li><a href="#">Compliance</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="footer-bottom">
+      <p>&copy; 2025 The Scheduler. All rights reserved.</p>
+      <div class="social-links">
+        <a href="#" class="social-link"><i class="bi bi-twitter"></i></a>
+        <a href="#" class="social-link"><i class="bi bi-linkedin"></i></a>
+        <a href="#" class="social-link"><i class="bi bi-facebook"></i></a>
+        <a href="#" class="social-link"><i class="bi bi-instagram"></i></a>
+      </div>
+    </div>
   </footer>
 
+  <!-- Remove the theme toggle JavaScript code -->
   <script>
-    const body = document.body;
-    const themeToggle = document.getElementById('themeToggle');
+    const billingToggle = document.getElementById('billingToggle');
+    const priceValues = document.querySelectorAll('.price-value');
+    const billedTexts = document.querySelectorAll('.pricing-billed-text');
+    const pricingPeriods = document.querySelectorAll('.pricing-period');
 
-    // On page load, check user theme
-    window.addEventListener('DOMContentLoaded', async () => {
-      try {
-        const res = await fetch('/api/user', { credentials: 'include' });
-        if (!res.ok) return;
-        const user = await res.json();
-        if (user.theme === 'dark') {
-          body.classList.add('dark-mode');
-          themeToggle.textContent = 'Toggle Light Mode';
-        }
-      } catch (err) {
-        console.error('Failed to fetch user:', err);
-      }
-    });
-
-    // Toggle theme
-    themeToggle.addEventListener('click', async () => {
-      const isDarkNow = body.classList.toggle('dark-mode');
-      const newTheme = isDarkNow ? 'dark' : 'light';
-      themeToggle.textContent = isDarkNow ? 'Toggle Light Mode' : 'Toggle Dark Mode';
-
-      try {
-        await fetch('/api/theme', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ theme: newTheme })
-        });
-      } catch (err) {
-        console.error('Error updating theme:', err);
-      }
+    // Billing toggle functionality
+    billingToggle.addEventListener('change', () => {
+      const isAnnual = billingToggle.checked;
+      
+      // Update price values
+      priceValues.forEach(priceEl => {
+        const monthlyPrice = priceEl.getAttribute('data-monthly');
+        const annualPrice = priceEl.getAttribute('data-annual');
+        priceEl.textContent = isAnnual ? annualPrice : monthlyPrice;
+      });
+      
+      // Update billing text
+      billedTexts.forEach(textEl => {
+        textEl.textContent = isAnnual ? 'Billed annually' : 'Billed monthly';
+      });
+      
+      // Update active state on pricing period labels
+      pricingPeriods[0].classList.toggle('active', !isAnnual);
+      pricingPeriods[1].classList.toggle('active', isAnnual);
     });
   </script>
 </body>
 </html>
+

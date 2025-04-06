@@ -11,10 +11,9 @@
     <nav class="navbar">
       <div class="logo">The Scheduler</div>
       <div class="nav-actions">
-        <a href="/pages/about.html" class="nav-link">About Us</a>
-        <a href="/pages/plans.html" class="nav-link">Plans</a>
-        <button id="themeToggle" class="dark-mode-toggle">Toggle Dark Mode</button>
-      </div>
+  <a href="/pages/about.html" class="nav-link">About Us</a>
+  <a href="/pages/plans.html" class="nav-link">Plans</a>
+</div>
     </nav>
   </header>
 
@@ -218,45 +217,8 @@
   </footer>
 
   <script>
-    const body = document.body;
-    const themeToggle = document.getElementById('themeToggle');
-
-    // 1) On page load, fetch the user theme from /api/user
-    window.addEventListener('DOMContentLoaded', async () => {
-      try {
-        const res = await fetch('/api/user', { credentials: 'include' });
-        if (!res.ok) {
-          // Possibly not logged in or server error
-          return;
-        }
-        const user = await res.json();
-        if (user.theme === 'dark') {
-          body.classList.add('dark-mode');
-          themeToggle.textContent = 'Toggle Light Mode';
-        }
-      } catch (err) {
-        console.error('Failed to fetch user:', err);
-      }
-    });
-
-    // 2) Toggle dark/light mode and update /api/theme
-    themeToggle.addEventListener('click', async () => {
-      const isDarkNow = body.classList.toggle('dark-mode');
-      const newTheme = isDarkNow ? 'dark' : 'light';
-      themeToggle.textContent = isDarkNow ? 'Toggle Light Mode' : 'Toggle Dark Mode';
-
-      try {
-        await fetch('/api/theme', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ theme: newTheme })
-        });
-      } catch (err) {
-        console.error('Error updating theme:', err);
-      }
-    });
-  </script>
+  // All theme-related JavaScript has been removed
+</script>
 </body>
 </html>
 
