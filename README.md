@@ -11,7 +11,7 @@
 
 ---
 
-## 🚀 Phase 2: Expected Completion: April 15th
+## 🚀 Phase 2: Expected Completion: April 10th
 
 ### 🐞 Bugs
 _(To be updated as issues are found)_
