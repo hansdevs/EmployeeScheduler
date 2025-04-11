@@ -5,6 +5,15 @@
   <title>Pricing Plans - The Scheduler</title>
   <link rel="stylesheet" href="../styles/pages.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <style>
+  /* Fix for pricing hover effect */
+  .pricing-card:hover .price-value,
+  .pricing-card:hover .price-currency,
+  .pricing-card:hover .price-period,
+  .pricing-card:hover .pricing-billed-text {
+    color: white;
+  }
+</style>
 </head>
 <body>
   <header class="header">
@@ -219,34 +228,11 @@
     </div>
   </footer>
 
-  <!-- Remove the theme toggle JavaScript code -->
-  <script>
-    const billingToggle = document.getElementById('billingToggle');
-    const priceValues = document.querySelectorAll('.price-value');
-    const billedTexts = document.querySelectorAll('.pricing-billed-text');
-    const pricingPeriods = document.querySelectorAll('.pricing-period');
-
-    // Billing toggle functionality
-    billingToggle.addEventListener('change', () => {
-      const isAnnual = billingToggle.checked;
-      
-      // Update price values
-      priceValues.forEach(priceEl => {
-        const monthlyPrice = priceEl.getAttribute('data-monthly');
-        const annualPrice = priceEl.getAttribute('data-annual');
-        priceEl.textContent = isAnnual ? annualPrice : monthlyPrice;
-      });
-      
-      // Update billing text
-      billedTexts.forEach(textEl => {
-        textEl.textContent = isAnnual ? 'Billed annually' : 'Billed monthly';
-      });
-      
-      // Update active state on pricing period labels
-      pricingPeriods[0].classList.toggle('active', !isAnnual);
-      pricingPeriods[1].classList.toggle('active', isAnnual);
-    });
-  </script>
+  <!-- jQuery (if needed) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  
+  <!-- Custom JavaScript -->
+  <script src="../js/pricing.js"></script>
 </body>
 </html>
 

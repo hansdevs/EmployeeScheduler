@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Workflow Management</title>
+
+  <!-- Bootstrap CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+  />
+
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="../pages/schedule.css" />
+  <style>
+    /* Workflow Canvas Styles */
+    .workflow-canvas {
+      background-color: #1e1e1e;
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 20px 20px;
+      min-height: 600px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      transition: transform 0.3s ease;
+      transform-origin: center;
+    }
+
+    .workflow-node {
+      position: absolute;
+      width: 220px;
+      background-color: #2a2a2a;
+      border-radius: 6px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      cursor: move;
+      user-select: none;
+      z-index: 10;
+      overflow: hidden;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    
+    .workflow-node:hover {
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .node-header {
+      padding: 10px;
+      color: white;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .node-header .node-title {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .node-body {
+      padding: 10px;
+      background-color: #333;
+    }
+
+    .node-footer {
+      padding: 8px;
+      background-color: #2a2a2a;
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    .node-connection-point {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: #666;
+      position: absolute;
+      cursor: pointer;
+      z-index: 20;
+      transition: all 0.2s;
+    }
+
+    .node-connection-point:hover {
+      background-color: var(--primary-color);
+      transform: scale(1.2);
+    }
+
+    .node-connection-point.input {
+      left: -6px;
+    }
+
+    .node-connection-point.output {
+      right: -6px;
+    }
+
+    .node-connection-point.connected {
+      background-color: var(--primary-color);
+    }
+
+    .connection-line {
+      position: absolute;
+      pointer-events: none;
+      z-index: 5;
+    }
+    
+    .connection-line path {
+      transition: stroke 0.2s, stroke-width 0.2s;
+    }
+    
+    .connection-line:hover path {
+      stroke-width: 3;
+    }
+
+    .workflow-management {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .workflow-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .workflow-title {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--dark-color);
+      margin: 0;
+    }
+
+    .workflow-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .workflow-form {
+      background-color: rgba(13, 110, 253, 0.05);
+      border-radius: 6px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .form-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--primary-color);
+    }
+
+    .add-btn {
+      background-color: var(--success-color);
+      color: white;
+      border: none;
+      padding: 0.6rem 1.5rem;
+      border-radius: 4px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .add-btn:hover {
+      background-color: #157347;
+    }
+
+    /* Team node colors - using the site's existing color scheme */
+    .node-management { border-top: 3px solid var(--primary-color); }
+    .node-management .node-header { background-color: var(--primary-color); }
+    
+    .node-sales { border-top: 3px solid var(--success-color); }
+    .node-sales .node-header { background-color: var(--success-color); }
+    
+    .node-operations { border-top: 3px solid var(--danger-color); }
+    .node-operations .node-header { background-color: var(--danger-color); }
+    
+    .node-hr { border-top: 3px solid rebeccapurple; }
+    .node-hr .node-header { background-color: rebeccapurple; }
+    
+    .node-finance { border-top: 3px solid var(--warning-color); }
+    .node-finance .node-header { background-color: var(--warning-color); }
+    
+    .node-it { border-top: 3px solid var(--info-color); }
+    .node-it .node-header { background-color: var(--info-color); }
+    
+    .node-marketing { border-top: 3px solid #d63384; }
+    .node-marketing .node-header { background-color: #d63384; }
+
+    .node-controls {
+      display: flex;
+      gap: 5px;
+    }
+
+    .node-control-btn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.7);
+      cursor: pointer;
+      padding: 0;
+      font-size: 12px;
+      transition: color 0.2s;
+    }
+
+    .node-control-btn:hover {
+      color: white;
+    }
+
+    .canvas-controls {
+      position: absolute;
+      bottom: 15px;
+      right: 15px;
+      z-index: 100;
+      display: flex;
+      gap: 10px;
+    }
+
+    .canvas-control-btn {
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .canvas-control-btn:hover {
+      background-color: rgba(0, 0, 0, 0.7);
+    }
+
+    .team-member {
+      display: inline-block;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #ddd;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      margin: 2px;
+      transition: background-color 0.2s;
+    }
+    
+    .team-member:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .connection-menu {
+      position: absolute;
+      background-color: #333;
+      border-radius: 4px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      padding: 8px;
+      z-index: 100;
+      display: none;
+    }
+
+    .connection-menu button {
+      background-color: #444;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+      display: block;
+      width: 100%;
+      text-align: left;
+      margin-bottom: 5px;
+      transition: background-color 0.2s;
+    }
+
+    .connection-menu button:hover {
+      background-color: #555;
+    }
+
+    .connection-menu button:last-child {
+      margin-bottom: 0;
+    }
+
+    .connection-label {
+      position: absolute;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      z-index: 15;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    
+    .connection-label:hover {
+      opacity: 0.8;
+    }
+    
+    .workflow-status {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+    
+    .status-active {
+      background-color: var(--success-color);
+      box-shadow: 0 0 5px var(--success-color);
+    }
+    
+    .status-pending {
+      background-color: var(--warning-color);
+      box-shadow: 0 0 5px var(--warning-color);
+    }
+    
+    .status-blocked {
+      background-color: var(--danger-color);
+      box-shadow: 0 0 5px var(--danger-color);
+    }
+    
+    .workflow-templates {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .template-btn {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .template-btn:hover {
+      background-color: #e9ecef;
+      border-color: #ced4da;
+    }
+    
+    .template-btn.active {
+      background-color: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+  </style>
+</head>
+<body>
+<!-- TOP NAV BAR -->
+<div class="navbar">
+  <div class="container-fluid">
+    <div class="d-flex align-items-center">
+      <strong class="text-white me-3">Scheduler Beta</strong>
+      <a href="../pages/index.html" class="text-white-50 me-3">Home</a>
+      <a href="../pages/schedule.html" class="text-white-50 me-3">Schedule</a>
+      <a href="../pages/business.html" class="text-white-50 me-3">Business</a>
+      <a href="../pages/employees.html" class="text-white-50 me-3">Employees</a>
+      <a href="../pages/stations.html" class="text-white-50 me-3">Stations</a>
+      <a href="../pages/workflow.html" class="text-white me-3">Workflow</a>
+      <a href="../pages/official.html" class="text-white-50 me-3">Official&nbsp;Schedule</a>
+      <a href="../pages/timeclock.html" class="text-white-50 me-3">Time&nbsp;Clock</a>
+    </div>
+    <div id="localTime" class="text-white-50 small"></div>
+  </div>
+</div>
+
+<div class="container-fluid py-4">
+  <div id="statusMessage"></div>
+  
+  <div class="workflow-management">
+    <div class="workflow-header">
+      <h2 class="workflow-title">Team Workflow Management</h2>
+      <div class="workflow-actions">
+        <button class="btn btn-outline-primary me-2" onclick="loadWorkflow()">
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#workflowHelpModal">
+          <i class="bi bi-question-circle"></i> Help
+        </button>
+      </div>
+    </div>
+    
+    <div class="alert alert-info mb-4">
+      <i class="bi bi-info-circle-fill me-2"></i>
+      <strong>Team Workflow Visualization</strong> - Create and connect teams to visualize your workflow processes. Drag teams to position them, and connect them to show task flows and approval processes.
+    </div>
+    
+    <!-- Workflow Templates -->
+    <div class="workflow-templates">
+      <button class="template-btn active" onclick="selectTemplate('default')">Default View</button>
+      <button class="template-btn" onclick="selectTemplate('hierarchical')">Hierarchical</button>
+      <button class="template-btn" onclick="selectTemplate('approval')">Approval Process</button>
+      <button class="template-btn" onclick="selectTemplate('project')">Project Flow</button>
+    </div>
+    
+    <!-- Workflow Canvas -->
+    <div class="workflow-canvas" id="workflowCanvas">
+      <!-- Teams will be added here by JavaScript -->
+      
+      <!-- Canvas Controls -->
+      <div class="canvas-controls">
+        <button class="canvas-control-btn" title="Zoom In" onclick="zoomIn()">
+          <i class="bi bi-plus-lg"></i>
+        </button>
+        <button class="canvas-control-btn" title="Zoom Out" onclick="zoomOut()">
+          <i class="bi bi-dash-lg"></i>
+        </button>
+        <button class="canvas-control-btn" title="Reset View" onclick="resetView()">
+          <i class="bi bi-arrows-fullscreen"></i>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Connection Menu (hidden by default) -->
+    <div class="connection-menu" id="connectionMenu">
+      <button onclick="setConnectionType('approves')">Approves</button>
+      <button onclick="setConnectionType('provides_input')">Provides Input</button>
+      <button onclick="setConnectionType('reports_to')">Reports To</button>
+      <button onclick="setConnectionType('collaborates_with')">Collaborates With</button>
+      <button onclick="setConnectionType('delegates_to')">Delegates To</button>
+      <button onclick="deleteConnection()">Delete Connection</button>
+    </div>
+    
+    <!-- Add Team Form -->
+    <div class="workflow-form">
+      <h3 class="form-title">Add New Team</h3>
+      <div class="row">
+        <div class="col-md-3 mb-3">
+          <label class="form-label" for="teamName">Team Name</label>
+          <input type="text" id="teamName" class="form-control" placeholder="Enter team name" required>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+          <label class="form-label" for="teamType">Team Type</label>
+          <select id="teamType" class="form-select">
+            <option value="management">Management</option>
+            <option value="sales">Sales</option>
+            <option value="operations">Operations</option>
+            <option value="hr">Human Resources</option>
+            <option value="finance">Finance</option>
+            <option value="it">IT</option>
+            <option value="marketing">Marketing</option>
+          </select>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+          <label class="form-label" for="teamLead">Team Lead</label>
+          <select id="teamLead" class="form-select">
+            <option value="">Select an employee</option>
+            <!-- Employees will be added here by JavaScript -->
+          </select>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+          <label class="form-label" for="teamStatus">Workflow Status</label>
+          <select id="teamStatus" class="form-select">
+            <option value="active">Active</option>
+            <option value="pending">Pending</option>
+            <option value="blocked">Blocked</option>
+          </select>
+        </div>
+      </div>
+      
+      <button class="add-btn" onclick="addTeam()">
+        <i class="bi bi-plus-circle me-2"></i> Add Team
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Workflow Help Modal -->
+<div class="modal fade" id="workflowHelpModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Team Workflow Help</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <h6><i class="bi bi-info-circle me-2"></i>Getting Started</h6>
+        <p>The Team Workflow Management page allows you to visualize how work flows between teams in your organization.</p>
+        
+        <h6><i class="bi bi-mouse me-2"></i>Basic Controls</h6>
+        <ul>
+          <li><strong>Add Team:</strong> Use the form at the bottom to create new teams</li>
+          <li><strong>Move Team:</strong> Click and drag a team card to reposition it</li>
+          <li><strong>Connect Teams:</strong> Click on a connection point (circle) on one team, then click on another team's connection point</li>
+          <li><strong>Edit Connection:</strong> Right-click on a connection line to change its type or delete it</li>
+          <li><strong>Zoom:</strong> Use the controls in the bottom right to zoom in/out or reset the view</li>
+        </ul>
+        
+        <h6><i class="bi bi-diagram-3 me-2"></i>Workflow Relationships</h6>
+        <p>You can create different types of workflow connections between teams:</p>
+        <ul>
+          <li><strong>Approves:</strong> Team must approve work before it proceeds</li>
+          <li><strong>Provides Input:</strong> Team contributes to the work but doesn't approve</li>
+          <li><strong>Reports To:</strong> Indicates a reporting relationship</li>
+          <li><strong>Collaborates With:</strong> Teams work together on tasks</li>
+          <li><strong>Delegates To:</strong> Team assigns work to another team</li>
+        </ul>
+        
+        <h6><i class="bi bi-palette me-2"></i>Workflow Templates</h6>
+        <p>Use the template buttons to quickly set up common workflow patterns:</p>
+        <ul>
+          <li><strong>Default View:</strong> Standard team layout</li>
+          <li><strong>Hierarchical:</strong> Traditional org chart structure</li>
+          <li><strong>Approval Process:</strong> Shows approval workflows</li>
+          <li><strong>Project Flow:</strong> Visualizes project task flow</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got It</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Local time display -->
+<script>
+  function updateLocalTime() {
+    const now = new Date();
+    const timeString = now.toLocaleString([], { 
+      dateStyle: 'short',
+      timeStyle: 'medium' 
+    });
+    document.getElementById('localTime').textContent = timeString;
+  }
+  setInterval(updateLocalTime, 1000);
+  updateLocalTime();
+</script>
+
+<!-- Team Workflow Management JS -->
+<script>
+  /**
+   * Team Workflow Management
+   * 
+   * This script handles the interactive team workflow visualization.
+   * It allows users to create, connect, and organize teams to visualize
+   * workflow processes and approval chains.
+   */
+  
+  // ===== GLOBAL VARIABLES =====
+  let teams = [];
+  let connections = [];
+  let employees = [];
+  let canvas = document.getElementById('workflowCanvas');
+  let isDragging = false;
+  let draggedNode = null;
+  let dragOffsetX = 0;
+  let dragOffsetY = 0;
+  let connectionStart = null;
+  let connectionEnd = null;
+  let tempLine = null;
+  let scale = 1;
+  let selectedConnection = null;
+  let connectionMenu = document.getElementById('connectionMenu');
+  let currentTemplate = 'default';
+  
+  // ===== INITIALIZATION =====
+  
+  // Load teams and employees on page load
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadEmployees();
+    await loadWorkflow();
+    setupCanvasEvents();
+  });
+  
+  // Load employees from API
+  async function loadEmployees() {
+    try {
+      const response = await fetch('/api/employees');
+      if (!response.ok) {
+        throw new Error('Failed to load employees');
+      }
+      
+      employees = await response.json();
+      
+      // Populate the team lead dropdown
+      const teamLeadSelect = document.getElementById('teamLead');
+      teamLeadSelect.innerHTML = '<option value="">Select an employee</option>';
+      
+      employees.forEach(emp => {
+        const option = document.createElement('option');
+        option.value = emp.id;
+        option.textContent = emp.name;
+        teamLeadSelect.appendChild(option);
+      });
+      
+    } catch (error) {
+      console.error('Error loading employees:', error);
+      showStatusMessage('Error loading employees: ' + error.message, 'danger');
+    }
+  }
+  
+  // Load workflow data (teams and connections)
+  async function loadWorkflow() {
+    try {
+      // In a real implementation, this would fetch from an API
+      // For now, we'll use mock data if none exists yet
+      if (teams.length === 0) {
+        // Initialize with template data
+        initializeTemplateData(currentTemplate);
+      }
+      
+      renderTeams();
+      renderConnections();
+      
+    } catch (error) {
+      console.error('Error loading workflow:', error);
+      showStatusMessage('Error loading workflow: ' + error.message, 'danger');
+    }
+  }
+  
+  // ===== TEMPLATE MANAGEMENT =====
+  
+  // Select a workflow template
+  function selectTemplate(template) {
+    // Update active button
+    document.querySelectorAll('.template-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    document.querySelector(`.template-btn[onclick="selectTemplate('${template}')"]`).classList.add('active');
+    
+    // Set current template
+    currentTemplate = template;
+    
+    // Initialize template data
+    initializeTemplateData(template);
+    
+    // Render the template
+    renderTeams();
+    renderConnections();
+  }
+  
+  // Initialize template data based on selected template
+  function initializeTemplateData(template) {
+    // Clear existing data
+    teams = [];
+    connections = [];
+    
+    switch(template) {
+      case 'hierarchical':
+        // Hierarchical org chart template
+        teams = [
+          {
+            id: 1,
+            name: 'Executive Team',
+            type: 'management',
+            lead: 'Jane Smith',
+            leadId: 1,
+            members: ['Jane Smith', 'John Doe'],
+            status: 'active',
+            position: { x: 400, y: 50 }
+          },
+          {
+            id: 2,
+            name: 'Sales',
+            type: 'sales',
+            lead: 'Bob Johnson',
+            leadId: 3,
+            members: ['Bob Johnson', 'Alice Williams'],
+            status: 'active',
+            position: { x: 200, y: 200 }
+          },
+          {
+            id: 3,
+            name: 'Marketing',
+            type: 'marketing',
+            lead: 'Sarah Davis',
+            leadId: 5,
+            members: ['Sarah Davis', 'Mike Wilson'],
+            status: 'active',
+            position: { x: 400, y: 200 }
+          },
+          {
+            id: 4,
+            name: 'IT Department',
+            type: 'it',
+            lead: 'David Miller',
+            leadId: 7,
+            members: ['David Miller', 'Emma Brown'],
+            status: 'active',
+            position: { x: 600, y: 200 }
+          },
+          {
+            id: 5,
+            name: 'Sales Team A',
+            type: 'sales',
+            lead: 'Alice Williams',
+            leadId: 4,
+            members: ['Alice Williams', 'Tom Clark'],
+            status: 'active',
+            position: { x: 200, y: 350 }
+          },
+          {
+            id: 6,
+            name: 'Sales Team B',
+            type: 'sales',
+            lead: 'Tom Clark',
+            leadId: 9,
+            members: ['Tom Clark', 'Lisa Moore'],
+            status: 'active',
+            position: { x: 200, y: 500 }
+          }
+        ];
+        
+        connections = [
+          { from: 2, to: 1, type: 'reports_to' },
+          { from: 3, to: 1, type: 'reports_to' },
+          { from: 4, to: 1, type: 'reports_to' },
+          { from: 5, to: 2, type: 'reports_to' },
+          { from: 6, to: 2, type: 'reports_to' }
+        ];
+        break;
+        
+      case 'approval':
+        // Approval process template
+        teams = [
+          {
+            id: 1,
+            name: 'Request Initiation',
+            type: 'operations',
+            lead: 'John Doe',
+            leadId: 2,
+            members: ['John Doe', 'Alice Williams'],
+            status: 'active',
+            position: { x: 100, y: 250 }
+          },
+          {
+            id: 2,
+            name: 'Department Review',
+            type: 'management',
+            lead: 'Bob Johnson',
+            leadId: 3,
+            members: ['Bob Johnson'],
+            status: 'pending',
+            position: { x: 400, y: 150 }
+          },
+          {
+            id: 3,
+            name: 'Finance Approval',
+            type: 'finance',
+            lead: 'Sarah Davis',
+            leadId: 5,
+            members: ['Sarah Davis'],
+            status: 'blocked',
+            position: { x: 400, y: 350 }
+          },
+          {
+            id: 4,
+            name: 'Executive Approval',
+            type: 'management',
+            lead: 'Jane Smith',
+            leadId: 1,
+            members: ['Jane Smith'],
+            status: 'pending',
+            position: { x: 700, y: 250 }
+          }
+        ];
+        
+        connections = [
+          { from: 1, to: 2, type: 'approves' },
+          { from: 1, to: 3, type: 'approves' },
+          { from: 2, to: 4, type: 'approves' },
+          { from: 3, to: 4, type: 'approves' }
+        ];
+        break;
+        
+      case 'project':
+        // Project flow template
+        teams = [
+          {
+            id: 1,
+            name: 'Project Planning',
+            type: 'management',
+            lead: 'Jane Smith',
+            leadId: 1,
+            members: ['Jane Smith', 'Bob Johnson'],
+            status: 'active',
+            position: { x: 100, y: 250 }
+          },
+          {
+            id: 2,
+            name: 'Design Team',
+            type: 'marketing',
+            lead: 'Sarah Davis',
+            leadId: 5,
+            members: ['Sarah Davis', 'Mike Wilson'],
+            status: 'active',
+            position: { x: 350, y: 150 }
+          },
+          {
+            id: 3,
+            name: 'Development',
+            type: 'it',
+            lead: 'David Miller',
+            leadId: 7,
+            members: ['David Miller', 'Emma Brown'],
+            status: 'pending',
+            position: { x: 350, y: 350 }
+          },
+          {
+            id: 4,
+            name: 'QA Testing',
+            type: 'it',
+            lead: 'Emma Brown',
+            leadId: 8,
+            members: ['Emma Brown', 'Tom Clark'],
+            status: 'blocked',
+            position: { x: 600, y: 250 }
+          },
+          {
+            id: 5,
+            name: 'Deployment',
+            type: 'operations',
+            lead: 'John Doe',
+            leadId: 2,
+            members: ['John Doe'],
+            status: 'pending',
+            position: { x: 850, y: 250 }
+          }
+        ];
+        
+        connections = [
+          { from: 1, to: 2, type: 'delegates_to' },
+          { from: 1, to: 3, type: 'delegates_to' },
+          { from: 2, to: 3, type: 'provides_input' },
+          { from: 3, to: 4, type: 'delegates_to' },
+          { from: 4, to: 5, type: 'delegates_to' },
+          { from: 2, to: 4, type: 'collaborates_with' }
+        ];
+        break;
+        
+      default:
+        // Default template
+        teams = [
+          {
+            id: 1,
+            name: 'Executive Team',
+            type: 'management',
+            lead: 'Jane Smith',
+            leadId: 1,
+            members: ['Jane Smith', 'John Doe'],
+            status: 'active',
+            position: { x: 100, y: 100 }
+          },
+          {
+            id: 2,
+            name: 'Sales Team',
+            type: 'sales',
+            lead: 'Bob Johnson',
+            leadId: 3,
+            members: ['Bob Johnson', 'Alice Williams'],
+            status: 'active',
+            position: { x: 400, y: 100 }
+          },
+          {
+            id: 3,
+            name: 'Marketing Team',
+            type: 'marketing',
+            lead: 'Sarah Davis',
+            leadId: 5,
+            members: ['Sarah Davis', 'Mike Wilson'],
+            status: 'pending',
+            position: { x: 400, y: 300 }
+          },
+          {
+            id: 4,
+            name: 'IT Support',
+            type: 'it',
+            lead: 'David Miller',
+            leadId: 7,
+            members: ['David Miller', 'Emma Brown'],
+            status: 'active',
+            position: { x: 100, y: 300 }
+          }
+        ];
+        
+        connections = [
+          { from: 2, to: 1, type: 'reports_to' },
+          { from: 3, to: 1, type: 'reports_to' },
+          { from: 3, to: 2, type: 'collaborates_with' },
+          { from: 4, to: 1, type: 'reports_to' }
+        ];
+    }
+  }
+  
+  // ===== RENDERING FUNCTIONS =====
+  
+  // Render teams on the canvas
+  function renderTeams() {
+    // Clear existing teams
+    const existingNodes = document.querySelectorAll('.workflow-node');
+    existingNodes.forEach(node => node.remove());
+    
+    // Render each team
+    teams.forEach(team => {
+      createTeamNode(team);
+    });
+  }
+  
+  // Create a team node
+  function createTeamNode(team) {
+    const node = document.createElement('div');
+    node.className = `workflow-node node-${team.type}`;
+    node.id = `team-${team.id}`;
+    node.dataset.id = team.id;
+    node.style.left = `${team.position.x}px`;
+    node.style.top = `${team.position.y}px`;
+    
+    // Create node header
+    const header = document.createElement('div');
+    header.className = 'node-header';
+    
+    const title = document.createElement('h3');
+    title.className = 'node-title';
+    title.textContent = team.name;
+    
+    const controls = document.createElement('div');
+    controls.className = 'node-controls';
+    
+    const editBtn = document.createElement('button');
+    editBtn.className = 'node-control-btn';
+    editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+    editBtn.title = 'Edit Team';
+    editBtn.onclick = (e) => {
+      e.stopPropagation();
+      editTeam(team.id);
+    };
+    
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'node-control-btn';
+    deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+    deleteBtn.title = 'Delete Team';
+    deleteBtn.onclick = (e) => {
+      e.stopPropagation();
+      deleteTeam(team.id);
+    };
+    
+    controls.appendChild(editBtn);
+    controls.appendChild(deleteBtn);
+    
+    header.appendChild(title);
+    header.appendChild(controls);
+    
+    // Create node body
+    const body = document.createElement('div');
+    body.className = 'node-body';
+    
+    // Add team lead and status
+    const statusClass = `status-${team.status}`;
+    const headInfo = document.createElement('div');
+    headInfo.innerHTML = `
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <small>Lead: ${team.lead || 'None'}</small>
+        <small><span class="workflow-status ${statusClass}"></span>${team.status}</small>
+      </div>
+    `;
+    body.appendChild(headInfo);
+    
+    // Add team members
+    const membersContainer = document.createElement('div');
+    membersContainer.style.marginTop = '8px';
+    
+    if (team.members && team.members.length > 0) {
+      team.members.forEach(member => {
+        const memberTag = document.createElement('span');
+        memberTag.className = 'team-member';
+        memberTag.textContent = member;
+        membersContainer.appendChild(memberTag);
+      });
+    } else {
+      membersContainer.innerHTML = '<small class="text-muted">No team members</small>';
+    }
+    
+    body.appendChild(membersContainer);
+    
+    // Create node footer
+    const footer = document.createElement('div');
+    footer.className = 'node-footer';
+    footer.innerHTML = `<span>ID: ${team.id}</span><span>${team.type}</span>`;
+    
+    // Add connection points
+    const inputPoint = document.createElement('div');
+    inputPoint.className = 'node-connection-point input';
+    inputPoint.style.top = '50%';
+    inputPoint.dataset.nodeId = team.id;
+    inputPoint.dataset.type = 'input';
+    
+    const outputPoint = document.createElement('div');
+    outputPoint.className = 'node-connection-point output';
+    outputPoint.style.top = '50%';
+    outputPoint.dataset.nodeId = team.id;
+    outputPoint.dataset.type = 'output';
+    
+    // Add connection point event listeners
+    inputPoint.addEventListener('click', handleConnectionPointClick);
+    outputPoint.addEventListener('click', handleConnectionPointClick);
+    
+    // Assemble the node
+    node.appendChild(header);
+    node.appendChild(body);
+    node.appendChild(footer);
+    node.appendChild(inputPoint);
+    node.appendChild(outputPoint);
+    
+    // Make the node draggable
+    node.addEventListener('mousedown', startDrag);
+    
+    // Add the node to the canvas
+    canvas.appendChild(node);
+    
+    return node;
+  }
+  
+  // Render connections between teams
+  function renderConnections() {
+    // Clear existing connections
+    const existingLines = document.querySelectorAll('.connection-line');
+    existingLines.forEach(line => line.remove());
+    
+    const existingLabels = document.querySelectorAll('.connection-label');
+    existingLabels.forEach(label => label.remove());
+    
+    // Render each connection
+    connections.forEach(conn => {
+      createConnection(conn);
+    });
+  }
+  
+  // Create a connection between teams
+  function createConnection(conn) {
+    const fromNode = document.getElementById(`team-${conn.from}`);
+    const toNode = document.getElementById(`team-${conn.to}`);
+    
+    if (!fromNode || !toNode) return;
+    
+    const fromPoint = fromNode.querySelector('.node-connection-point.output');
+    const toPoint = toNode.querySelector('.node-connection-point.input');
+    
+    // Mark connection points as connected
+    fromPoint.classList.add('connected');
+    toPoint.classList.add('connected');
+    
+    // Calculate connection line
+    const fromRect = fromPoint.getBoundingClientRect();
+    const toRect = toPoint.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+    
+    const fromX = (fromRect.left + fromRect.width / 2 - canvasRect.left) / scale;
+    const fromY = (fromRect.top + fromRect.height / 2 - canvasRect.top) / scale;
+    const toX = (toRect.left + toRect.width / 2 - canvasRect.left) / scale;
+    const toY = (toRect.top + toRect.height / 2 - canvasRect.top) / scale;
+    
+    // Create SVG line
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    line.classList.add('connection-line');
+    line.style.left = '0';
+    line.style.top = '0';
+    line.style.width = '100%';
+    line.style.height = '100%';
+    line.dataset.from = conn.from;
+    line.dataset.to = conn.to;
+    line.dataset.type = conn.type;
+    
+    // Create path
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    
+    // Calculate control points for a curved line
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const controlX1 = fromX + dx * 0.5;
+    const controlY1 = fromY;
+    const controlX2 = toX - dx * 0.5;
+    const controlY2 = toY;
+    
+    // Set path attributes
+    path.setAttribute('d', `M ${fromX} ${fromY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${toX} ${toY}`);
+    path.setAttribute('fill', 'none');
+    
+    // Set line style based on connection type
+    switch (conn.type) {
+      case 'approves':
+        path.setAttribute('stroke', '#dc3545');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('marker-end', 'url(#arrowhead-approves)');
+        break;
+      case 'provides_input':
+        path.setAttribute('stroke', '#0dcaf0');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('stroke-dasharray', '5,5');
+        break;
+      case 'reports_to':
+        path.setAttribute('stroke', '#0d6efd');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('marker-end', 'url(#arrowhead-reports)');
+        break;
+      case 'collaborates_with':
+        path.setAttribute('stroke', '#20c997');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('stroke-dasharray', '5,5');
+        break;
+      case 'delegates_to':
+        path.setAttribute('stroke', '#fd7e14');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('marker-end', 'url(#arrowhead-delegates)');
+        break;
+      default:
+        path.setAttribute('stroke', '#6c757d');
+        path.setAttribute('stroke-width', '1');
+    }
+    
+    // Create arrowhead markers
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    
+    // Reports To marker
+    const reportsMarker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+    reportsMarker.setAttribute('id', 'arrowhead-reports');
+    reportsMarker.setAttribute('markerWidth', '10');
+    reportsMarker.setAttribute('markerHeight', '7');
+    reportsMarker.setAttribute('refX', '9');
+    reportsMarker.setAttribute('refY', '3.5');
+    reportsMarker.setAttribute('orient', 'auto');
+    
+    const reportsPolygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    reportsPolygon.setAttribute('points', '0 0, 10 3.5, 0 7');
+    reportsPolygon.setAttribute('fill', '#0d6efd');
+    
+    reportsMarker.appendChild(reportsPolygon);
+    
+    // Approves marker
+    const approvesMarker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+    approvesMarker.setAttribute('id', 'arrowhead-approves');
+    approvesMarker.setAttribute('markerWidth', '10');
+    approvesMarker.setAttribute('markerHeight', '7');
+    approvesMarker.setAttribute('refX', '9');
+    approvesMarker.setAttribute('refY', '3.5');
+    approvesMarker.setAttribute('orient', 'auto');
+    
+    const approvesPolygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    approvesPolygon.setAttribute('points', '0 0, 10 3.5, 0 7');
+    approvesPolygon.setAttribute('fill', '#dc3545');
+    
+    approvesMarker.appendChild(approvesPolygon);
+    
+    // Delegates To marker
+    const delegatesMarker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+    delegatesMarker.setAttribute('id', 'arrowhead-delegates');
+    delegatesMarker.setAttribute('markerWidth', '10');
+    delegatesMarker.setAttribute('markerHeight', '7');
+    delegatesMarker.setAttribute('refX', '9');
+    delegatesMarker.setAttribute('refY', '3.5');
+    delegatesMarker.setAttribute('orient', 'auto');
+    
+    const delegatesPolygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    delegatesPolygon.setAttribute('points', '0 0, 10 3.5, 0 7');
+    delegatesPolygon.setAttribute('fill', '#fd7e14');
+    
+    delegatesMarker.appendChild(delegatesPolygon);
+    
+    // Add markers to defs
+    defs.appendChild(reportsMarker);
+    defs.appendChild(approvesMarker);
+    defs.appendChild(delegatesMarker);
+    
+    // Add elements to SVG
+    line.appendChild(defs);
+    line.appendChild(path);
+    
+    // Add connection label
+    const labelX = fromX + (toX - fromX) / 2;
+    const labelY = fromY + (toY - fromY) / 2 - 10;
+    
+    const label = document.createElement('div');
+    label.className = 'connection-label';
+    label.style.left = `${labelX}px`;
+    label.style.top = `${labelY}px`;
+    
+    // Set label text based on connection type
+    switch (conn.type) {
+      case 'approves':
+        label.textContent = 'Approves';
+        break;
+      case 'provides_input':
+        label.textContent = 'Provides Input';
+        break;
+      case 'reports_to':
+        label.textContent = 'Reports To';
+        break;
+      case 'collaborates_with':
+        label.textContent = 'Collaborates With';
+        break;
+      case 'delegates_to':
+        label.textContent = 'Delegates To';
+        break;
+      default:
+        label.textContent = 'Connected';
+    }
+    
+    // Add right-click event to edit connection
+    line.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      selectedConnection = conn;
+      showConnectionMenu(e.clientX, e.clientY);
+    });
+    
+    // Add elements to canvas
+    canvas.appendChild(line);
+    canvas.appendChild(label);
+    
+    return line;
+  }
+  
+  // ===== INTERACTION HANDLERS =====
+  
+  // Start dragging a team node
+  function startDrag(e) {
+    // Only handle left mouse button
+    if (e.button !== 0) return;
+    
+    isDragging = true;
+    draggedNode = this;
+    
+    // Calculate offset
+    const rect = draggedNode.getBoundingClientRect();
+    dragOffsetX = e.clientX - rect.left;
+    dragOffsetY = e.clientY - rect.top;
+    
+    // Prevent text selection during drag
+    e.preventDefault();
+  }
+  
+  // Handle dragging
+  function handleDrag(e) {
+    if (!isDragging || !draggedNode) return;
+    
+    const canvasRect = canvas.getBoundingClientRect();
+    const x = (e.clientX - canvasRect.left - dragOffsetX) / scale;
+    const y = (e.clientY - canvasRect.top - dragOffsetY) / scale;
+    
+    // Update node position
+    draggedNode.style.left = `${x}px`;
+    draggedNode.style.top = `${y}px`;
+    
+    // Update team position in data
+    const teamId = parseInt(draggedNode.dataset.id);
+    const team = teams.find(d => d.id === teamId);
+    if (team) {
+      team.position.x = x;
+      team.position.y = y;
+    }
+    
+    // Update connections
+    renderConnections();
+  }
+  
+  // End dragging
+  function endDrag() {
+    isDragging = false;
+    draggedNode = null;
+  }
+  
+  // Handle connection point click
+  function handleConnectionPointClick(e) {
+    e.stopPropagation();
+    
+    const point = e.target;
+    const nodeId = parseInt(point.dataset.nodeId);
+    const pointType = point.dataset.type;
+    
+    if (!connectionStart) {
+      // Start a new connection
+      connectionStart = { nodeId, pointType, element: point };
+      point.classList.add('connected');
+      
+      // Create temporary line
+      createTemporaryLine(e);
+    } else {
+      // Complete the connection
+      connectionEnd = { nodeId, pointType, element: point };
+      
+      // Check if connection is valid
+      if (isValidConnection()) {
+        // Create the connection
+        const newConnection = {
+          from: connectionStart.pointType === 'output' ? connectionStart.nodeId : connectionEnd.nodeId,
+          to: connectionEnd.pointType === 'input' ? connectionEnd.nodeId : connectionStart.nodeId,
+          type: 'reports_to' // Default type
+        };
+        
+        connections.push(newConnection);
+        renderConnections();
+      } else {
+        // Invalid connection, remove temporary styling
+        connectionStart.element.classList.remove('connected');
+      }
+      
+      // Clean up
+      if (tempLine) {
+        tempLine.remove();
+        tempLine = null;
+      }
+      
+      connectionStart = null;
+      connectionEnd = null;
+    }
+  }
+  
+  // Check if a connection is valid
+  function isValidConnection() {
+    if (!connectionStart || !connectionEnd) return false;
+    
+    // Can't connect to the same node
+    if (connectionStart.nodeId === connectionEnd.nodeId) return false;
+    
+    // Must connect output to input
+    return (connectionStart.pointType === 'output' && connectionEnd.pointType === 'input') ||
+           (connectionStart.pointType === 'input' && connectionEnd.pointType === 'output');
+  }
+  
+  // Create a temporary line while making a connection
+  function createTemporaryLine(e) {
+    // Remove any existing temporary line
+    if (tempLine) {
+      tempLine.remove();
+    }
+    
+    // Create SVG element
+    tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    tempLine.classList.add('connection-line');
+    tempLine.style.left = '0';
+    tempLine.style.top = '0';
+    tempLine.style.width = '100%';
+    tempLine.style.height = '100%';
+    
+    // Create path
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('stroke', '#6c757d');
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('stroke-dasharray', '5,5');
+    path.setAttribute('fill', 'none');
+    
+    tempLine.appendChild(path);
+    canvas.appendChild(tempLine);
+    
+    // Update the line position
+    updateTemporaryLine(e);
+    
+    // Add mousemove event to update the line
+    canvas.addEventListener('mousemove', updateTemporaryLine);
+  }
+  
+  // Update the temporary connection line
+  function updateTemporaryLine(e) {
+    if (!tempLine || !connectionStart) return;
+    
+    const canvasRect = canvas.getBoundingClientRect();
+    const startPoint = connectionStart.element.getBoundingClientRect();
+    
+    const startX = (startPoint.left + startPoint.width / 2 - canvasRect.left) / scale;
+    const startY = (startPoint.top + startPoint.height / 2 - canvasRect.top) / scale;
+    
+    const mouseX = (e.clientX - canvasRect.left) / scale;
+    const mouseY = (e.clientY - canvasRect.top) / scale;
+    
+    // Calculate control points for a curved line
+    const dx = mouseX - startX;
+    const dy = mouseY - startY;
+    const controlX1 = startX + dx * 0.5;
+    const controlY1 = startY;
+    const controlX2 = mouseX - dx * 0.5;
+    const controlY2 = mouseY;
+    
+    // Update path
+    const path = tempLine.querySelector('path');
+    path.setAttribute('d', `M ${startX} ${startY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${mouseX} ${mouseY}`);
+  }
+  
+  // Show the connection menu
+  function showConnectionMenu(x, y) {
+    connectionMenu.style.left = `${x}px`;
+    connectionMenu.style.top = `${y}px`;
+    connectionMenu.style.display = 'block';
+    
+    // Add click outside to close
+    document.addEventListener('click', hideConnectionMenu);
+  }
+  
+  // Hide the connection menu
+  function hideConnectionMenu() {
+    connectionMenu.style.display = 'none';
+    document.removeEventListener('click', hideConnectionMenu);
+  }
+  
+  // Set the connection type
+  function setConnectionType(type) {
+    if (selectedConnection) {
+      selectedConnection.type = type;
+      renderConnections();
+    }
+    hideConnectionMenu();
+  }
+  
+  // Delete a connection
+  function deleteConnection() {
+    if (selectedConnection) {
+      const index = connections.findIndex(c => 
+        c.from === selectedConnection.from && c.to === selectedConnection.to
+      );
+      
+      if (index !== -1) {
+        connections.splice(index, 1);
+        renderConnections();
+      }
+    }
+    hideConnectionMenu();
+  }
+  
+  // ===== TEAM MANAGEMENT =====
+  
+  // Add a new team
+  function addTeam() {
+    const name = document.getElementById('teamName').value.trim();
+    const type = document.getElementById('teamType').value;
+    const leadId = document.getElementById('teamLead').value;
+    const status = document.getElementById('teamStatus').value;
+    
+    if (!name) {
+      showStatusMessage('Team name is required!', 'warning');
+      document.getElementById('teamName').focus();
+      return;
+    }
+    
+    // Find the lead employee
+    let lead = null;
+    let leadName = '';
+    if (leadId) {
+      lead = employees.find(e => e.id == leadId);
+      if (lead) {
+        leadName = lead.name;
+      }
+    }
+    
+    // Generate a new ID
+    const newId = teams.length > 0 
+      ? Math.max(...teams.map(d => d.id)) + 1 
+      : 1;
+    
+    // Create the new team
+    const newTeam = {
+      id: newId,
+      name: name,
+      type: type,
+      lead: leadName,
+      leadId: leadId ? parseInt(leadId) : null,
+      members: leadName ? [leadName] : [],
+      status: status,
+      position: { x: 100, y: 100 } // Default position
+    };
+    
+    // Add to teams array
+    teams.push(newTeam);
+    
+    // Create the node
+    createTeamNode(newTeam);
+    
+    // Clear the form
+    document.getElementById('teamName').value = '';
+    document.getElementById('teamLead').value = '';
+    
+    showStatusMessage('Team added successfully!', 'success');
+  }
+  
+  // Edit a team
+  function editTeam(id) {
+    alert(`Edit team ${id} - This feature will be implemented in a future update.`);
+  }
+  
+  // Delete a team
+  function deleteTeam(id) {
+    if (confirm(`Are you sure you want to delete this team? This will also remove any connections to it.`)) {
+      // Remove the team
+      const index = teams.findIndex(d => d.id === id);
+      if (index !== -1) {
+        teams.splice(index, 1);
+      }
+      
+      // Remove any connections involving this team
+      connections = connections.filter(c => c.from !== id && c.to !== id);
+      
+      // Re-render
+      renderTeams();
+      renderConnections();
+      
+      showStatusMessage('Team deleted successfully!', 'success');
+    }
+  }
+  
+  // ===== CANVAS CONTROLS =====
+  
+  // Zoom in
+  function zoomIn() {
+    scale = Math.min(scale + 0.1, 2);
+    applyZoom();
+  }
+  
+  // Zoom out
+  function zoomOut() {
+    scale = Math.max(scale - 0.1, 0.5);
+    applyZoom();
+  }
+  
+  // Reset view
+  function resetView() {
+    scale = 1;
+    applyZoom();
+  }
+  
+  // Apply zoom scale
+  function applyZoom() {
+    canvas.style.transform = `scale(${scale})`;
+    renderConnections(); // Redraw connections to account for new scale
+  }
+  
+  // Set up canvas events
+  function setupCanvasEvents() {
+    // Mouse events for dragging
+    canvas.addEventListener('mousemove', handleDrag);
+    document.addEventListener('mouseup', endDrag);
+    
+    // Cancel connection on right-click
+    canvas.addEventListener('contextmenu', (e) => {
+      if (connectionStart) {
+        e.preventDefault();
+        connectionStart.element.classList.remove('connected');
+        if (tempLine) {
+          tempLine.remove();
+          tempLine = null;
+        }
+        connectionStart = null;
+        canvas.removeEventListener('mousemove', updateTemporaryLine);
+      }
+    });
+    
+    // Cancel connection when clicking on canvas (not on a node)
+    canvas.addEventListener('click', (e) => {
+      if (e.target === canvas && connectionStart) {
+        connectionStart.element.classList.remove('connected');
+        if (tempLine) {
+          tempLine.remove();
+          tempLine = null;
+        }
+        connectionStart = null;
+        canvas.removeEventListener('mousemove', updateTemporaryLine);
+      }
+    });
+  }
+  
+  // ===== UTILITY FUNCTIONS =====
+  
+  // Show status message
+  function showStatusMessage(message, type) {
+    const statusMessage = document.getElementById('statusMessage');
+    if (!statusMessage) return;
+    
+    statusMessage.innerHTML = `
+      <div class="alert alert-${type}">
+        <i class="bi bi-${getIconForType(type)} me-2"></i>
+        ${message}
+      </div>
+    `;
+    
+    // Fade out the message after 3 seconds for success messages
+    if (type === 'success') {
+      setTimeout(() => {
+        statusMessage.style.transition = 'opacity 1s';
+        statusMessage.style.opacity = '0';
+        setTimeout(() => {
+          statusMessage.innerHTML = '';
+          statusMessage.style.opacity = '1';
+        }, 1000);
+      }, 3000);
+    }
+  }
+  
+  // Helper function to get the appropriate icon for message type
+  function getIconForType(type) {
+    switch (type) {
+      case 'success':
+        return 'check-circle-fill';
+      case 'warning':
+        return 'exclamation-triangle-fill';
+      case 'danger':
+        return 'exclamation-triangle-fill';
+      case 'info':
+        return 'info-circle-fill';
+      default:
+        return 'info-circle-fill';
+    }
+  }
+</script>
+</body>
+</html>

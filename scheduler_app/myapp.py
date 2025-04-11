@@ -203,32 +203,185 @@ class SchedulerRequestHandler(http.server.SimpleHTTPRequestHandler):
            self.send_json_response({"error": "Not authenticated"}, 401)
            return
        
-       # Logout endpoint
-       if path == '/api/logout':
-           # Get the session ID from the cookie
-           cookie_str = self.headers.get('Cookie', '')
-           cookie = cookies.SimpleCookie()
-           cookie.load(cookie_str)
-           
-           if 'session_id' in cookie:
-               session_id = cookie['session_id'].value
-               success = user_service.logout(session_id)
-               
-               if success:
-                   # Clear the cookie
-                   cookie = cookies.SimpleCookie()
-                   cookie['session_id'] = ''
-                   cookie['session_id']['path'] = '/'
-                   cookie['session_id']['expires'] = 'Thu, 01 Jan 1970 00:00:00 GMT'
-                   
-                   self.send_response(HTTPStatus.OK)
-                   self.send_header('Content-Type', 'application/json')
-                   self.send_header('Set-Cookie', cookie['session_id'].OutputString())
-                   self.end_headers()
-                   self.wfile.write(json.dumps({"success": True}).encode('utf-8'))
-                   return
-           
-           self.send_json_response({"error": "Not authenticated"}, 401)
+       # Workflow endpoints
+       if path == '/api/workflow/teams':
+           # This would normally fetch from a database
+           # For now, return mock data
+           teams = [
+               {
+                   "id": 1,
+                   "name": "Executive Team",
+                   "type": "management",
+                   "lead": "Jane Smith",
+                   "leadId": 1,
+                   "members": ["Jane Smith", "John Doe"],
+                   "status": "active",
+                   "position": { "x": 100, "y": 100 }
+               },
+               {
+                   "id": 2,
+                   "name": "Sales Team",
+                   "type": "sales",
+                   "lead": "Bob Johnson",
+                   "leadId": 3,
+                   "members": ["Bob Johnson", "Alice Williams"],
+                   "status": "active",
+                   "position": { "x": 400, "y": 100 }
+               },
+               {
+                   "id": 3,
+                   "name": "Marketing Team",
+                   "type": "marketing",
+                   "lead": "Sarah Davis",
+                   "leadId": 5,
+                   "members": ["Sarah Davis", "Mike Wilson"],
+                   "status": "pending",
+                   "position": { "x": 400, "y": 300 }
+               },
+               {
+                   "id": 4,
+                   "name": "IT Support",
+                   "type": "it",
+                   "lead": "David Miller",
+                   "leadId": 7,
+                   "members": ["David Miller", "Emma Brown"],
+                   "status": "active",
+                   "position": { "x": 100, "y": 300 }
+               }
+           ]
+           self.send_json_response(teams)
+           return
+       
+       if path == '/api/workflow/connections':
+           # This would normally fetch from a database
+           # For now, return mock data
+           connections = [
+               { "from": 2, "to": 1, "type": "reports_to" },
+               { "from": 3, "to": 1, "type": "reports_to" },
+               { "from": 3, "to": 2, "type": "collaborates_with" },
+               { "from": 4, "to": 1, "type": "reports_to" }
+           ]
+           self.send_json_response(connections)
+           return
+       
+       if path.startswith('/api/workflow/employee/'):
+           employee_id = int(path.split('/')[-1])
+           # This would normally fetch from a database
+           # For now, return mock data based on employee ID
+           teams = [
+               { "id": 2, "name": "Sales Team", "type": "sales", "status": "active" },
+               { "id": 5, "name": "Customer Support", "type": "operations", "status": "active" }
+           ]
+           workflows = [
+               { 
+                   "name": "Sales Approval Process", 
+                   "role": "Initiator",
+                   "nextStep": "Manager Approval",
+                   "status": "pending" 
+               },
+               { 
+                   "name": "Customer Support Ticket Flow", 
+                   "role": "Handler",
+                   "nextStep": "Quality Assurance",
+                   "status": "active" 
+               }
+           ]
+           self.send_json_response({"teams": teams, "workflows": workflows})
+           return
+       
+       if path.startswith('/api/workflow/station/'):
+           station_id = int(path.split('/')[-1])
+           # This would normally fetch from a database
+           # For now, return mock data based on station ID
+           teams = [
+               { "id": 3, "name": "Front Office", "type": "operations", "status": "active" },
+               { "id": 4, "name": "Customer Service", "type": "sales", "status": "active" }
+           ]
+           workflows = [
+               { 
+                   "name": "Customer Check-in Process", 
+                   "role": "Starting Point",
+                   "nextStep": "Service Delivery",
+                   "status": "active" 
+               },
+               { 
+                   "name": "Service Delivery Workflow", 
+                   "role": "Service Point",
+                   "nextStep": "Payment Processing",
+                   "status": "active" 
+               }
+           ]
+           self.send_json_response({"teams": teams, "workflows": workflows})
+           return
+       
+       if path == '/api/workflow/status':
+           # This would normally fetch from a database and the time clock system
+           # For now, return mock data
+           workflows = [
+               { 
+                   "name": "Sales Process", 
+                   "teams": [
+                       { "name": "Sales Team", "status": "active", "clockedIn": 3, "total": 5 },
+                       { "name": "Finance", "status": "pending", "clockedIn": 1, "total": 2 }
+                   ],
+                   "status": "active",
+                   "progress": 65
+               },
+               { 
+                   "name": "Customer Support", 
+                   "teams": [
+                       { "name": "Support Team", "status": "active", "clockedIn": 4, "total": 4 },
+                       { "name": "IT Department", "status": "active", "clockedIn": 2, "total": 3 }
+                   ],
+                   "status": "active",
+                   "progress": 85
+               },
+               { 
+                   "name": "Product Development", 
+                   "teams": [
+                       { "name": "Development", "status": "active", "clockedIn": 3, "total": 6 },
+                       { "name": "QA Team", "status": "blocked", "clockedIn": 0, "total": 3 }
+                   ],
+                   "status": "blocked",
+                   "progress": 40
+               }
+           ]
+           self.send_json_response({"workflows": workflows})
+           return
+       
+       if path == '/api/workflow/context':
+           day = int(query_params.get('day', [0])[0])
+           # This would normally fetch from a database
+           # For now, return mock data based on the day
+           workflows = [
+               { 
+                   "name": "Sales Process", 
+                   "teams": ["Sales Team", "Finance"],
+                   "employees": ["Bob Johnson", "Alice Williams", "Sarah Davis"],
+                   "status": "active"
+               },
+               { 
+                   "name": "Customer Support", 
+                   "teams": ["Support Team", "IT Department"],
+                   "employees": ["David Miller", "Emma Brown", "Mike Wilson"],
+                   "status": "active"
+               }
+           ]
+           recommendations = [
+               {
+                   "text": "Ensure Sales and Finance teams have overlapping hours",
+                   "priority": "warning"
+               },
+               {
+                   "text": "Schedule at least one IT support staff during customer support hours",
+                   "priority": "danger"
+               },
+               {
+                   "text": "Consider adding backup staff for Customer Support workflow",
+                   "priority": "info"
+               }
+           ]
+           self.send_json_response({"workflows": workflows, "recommendations": recommendations})
            return
        
        # Employees endpoint
@@ -728,4 +881,3 @@ def run_server(port=8000):
 
 if __name__ == '__main__':
    run_server()
-

@@ -695,3 +695,200 @@ async function generateReport(startDate, endDate) {
   }
 }
 
+// Add workflow integration to time clock
+function showWorkflowStatus() {
+  // Create a modal for workflow status
+  const modalHtml = `
+    <div class="modal fade" id="workflowStatusModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title">
+              <i class="bi bi-diagram-3 me-2"></i> 
+              Current Workflow Status
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle-fill me-2"></i>
+              This shows the current status of all active workflows based on clocked-in employees.
+            </div>
+            
+            <div id="workflowStatusContent">
+              <div class="d-flex justify-content-center p-4">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading workflow data...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <a href="../pages/workflow.html" class="btn btn-primary">
+              <i class="bi bi-diagram-3 me-1"></i> Open Workflow Manager
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+
+  // Remove any existing modal
+  const existingModal = document.getElementById("workflowStatusModal")
+  if (existingModal) {
+    existingModal.remove()
+  }
+
+  // Add the modal to the document
+  document.body.insertAdjacentHTML("beforeend", modalHtml)
+
+  // Show the modal
+  const modalElement = document.getElementById("workflowStatusModal")
+  const modal = new bootstrap.Modal(modalElement)
+  modal.show()
+
+  // Load the workflow status data
+  loadWorkflowStatusData()
+}
+
+// Load workflow status data
+async function loadWorkflowStatusData() {
+  try {
+    // In a real implementation, this would fetch from an API
+    // For now, we'll use mock data
+    setTimeout(() => {
+      const workflowContent = document.getElementById("workflowStatusContent")
+      if (!workflowContent) return
+
+      // Mock data for active workflows
+      const workflows = [
+        {
+          name: "Sales Process",
+          teams: [
+            { name: "Sales Team", status: "active", clockedIn: 3, total: 5 },
+            { name: "Finance", status: "pending", clockedIn: 1, total: 2 },
+          ],
+          status: "active",
+          progress: 65,
+        },
+        {
+          name: "Customer Support",
+          teams: [
+            { name: "Support Team", status: "active", clockedIn: 4, total: 4 },
+            { name: "IT Department", status: "active", clockedIn: 2, total: 3 },
+          ],
+          status: "active",
+          progress: 85,
+        },
+        {
+          name: "Product Development",
+          teams: [
+            { name: "Development", status: "active", clockedIn: 3, total: 6 },
+            { name: "QA Team", status: "blocked", clockedIn: 0, total: 3 },
+          ],
+          status: "blocked",
+          progress: 40,
+        },
+      ]
+
+      // Create HTML for the workflows
+      let workflowsHtml = `<h5 class="mb-3">Active Workflows</h5>`
+
+      if (workflows.length === 0) {
+        workflowsHtml += `<p class="text-muted">There are no active workflows at this time.</p>`
+      } else {
+        workflows.forEach((workflow) => {
+          const statusClass = getStatusBadgeClass(workflow.status)
+
+          workflowsHtml += `
+            <div class="card mb-3">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">${workflow.name}</h6>
+                <span class="badge bg-${statusClass}">${workflow.status}</span>
+              </div>
+              <div class="card-body">
+                <div class="progress mb-3" style="height: 20px;">
+                  <div class="progress-bar bg-${statusClass}" role="progressbar" 
+                       style="width: ${workflow.progress}%;" 
+                       aria-valuenow="${workflow.progress}" aria-valuemin="0" aria-valuemax="100">
+                    ${workflow.progress}%
+                  </div>
+                </div>
+                
+                <h6 class="mb-2">Teams Involved:</h6>
+                <div class="table-responsive">
+                  <table class="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Team</th>
+                        <th>Status</th>
+                        <th>Staffing</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+          `
+
+          workflow.teams.forEach((team) => {
+            workflowsHtml += `
+              <tr>
+                <td>${team.name}</td>
+                <td><span class="badge bg-${getStatusBadgeClass(team.status)}">${team.status}</span></td>
+                <td>
+                  <span class="badge bg-${team.clockedIn === 0 ? "danger" : team.clockedIn < team.total ? "warning" : "success"}">
+                    ${team.clockedIn}/${team.total} clocked in
+                  </span>
+                </td>
+              </tr>
+            `
+          })
+
+          workflowsHtml += `
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          `
+        })
+      }
+
+      // Add a link to the workflow manager
+      const linkHtml = `
+        <div class="text-center mt-4">
+          <a href="../pages/workflow.html" class="btn btn-outline-primary">
+            <i class="bi bi-diagram-3 me-1"></i> Manage Team Workflows
+          </a>
+        </div>
+      `
+
+      // Update the content
+      workflowContent.innerHTML = workflowsHtml + linkHtml
+    }, 1000) // Simulate loading delay
+  } catch (error) {
+    console.error("Error loading workflow data:", error)
+    const workflowContent = document.getElementById("workflowStatusContent")
+    if (workflowContent) {
+      workflowContent.innerHTML = `
+        <div class="alert alert-danger">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          Error loading workflow data: ${error.message}
+        </div>
+      `
+    }
+  }
+}
+
+// Helper function to get status badge class
+function getStatusBadgeClass(status) {
+  switch (status) {
+    case "active":
+      return "success"
+    case "pending":
+      return "warning"
+    case "blocked":
+      return "danger"
+    default:
+      return "secondary"
+  }
+}

@@ -323,8 +323,14 @@
           <button class="btn btn-sm btn-outline-primary me-1" onclick="editEmployee(${emp.id})">
             <i class="bi bi-pencil me-1"></i> Edit
           </button>
-          <button class="btn btn-sm btn-danger" onclick="removeEmployee(${emp.id})">
+          <button class="btn btn-sm btn-danger me-1" onclick="removeEmployee(${emp.id})">
             <i class="bi bi-trash me-1"></i> Remove
+          </button>
+          <button class="btn btn-sm btn-outline-info me-1" onclick="viewEmployeeTimecard(${emp.id})">
+            <i class="bi bi-clock-history me-1"></i> Timecard
+          </button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="viewEmployeeWorkflow(${emp.id})">
+            <i class="bi bi-diagram-3 me-1"></i> Workflow
           </button>
         </td>
       `
@@ -568,4 +574,3 @@
 </script>
 </body>
 </html>
-
