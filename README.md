@@ -14,8 +14,7 @@
 ## 🚀 Phase 2: Expected Completion: April 10th
 
 ### 🐞 Bugs
-_(To be updated as issues are found)_
-
+🐞🐞🐞API endpoints for workflow manager are inconsistent🐞🐞🐞
 ### 🔧 Upcoming Features
 - Secure account creation  
 - ✅ Revamped User Interface (UI)  
