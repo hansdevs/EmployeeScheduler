@@ -13,6 +13,8 @@
 
 ## 🚀 Phase 2: Expected Completion: April 10th
 
+Focus on different locations/departments feature
+
 ### 🐞 Bugs
 🐞🐞🐞API endpoints for workflow manager are inconsistent🐞🐞🐞
 ### 🔧 Upcoming Features
@@ -23,7 +25,7 @@
 - ✅ React added  
 - ✅ Bootstrap added  
 - ✅ Custom Employee IDs  
-- 🔧🔧Website Pages Overhaul
+- ✅ Website Pages Overhaul
 
 ### 🧩 Additional Features
 - ✅ **Time Clock History View** (for employees and admins to review punch-in/out history)  
